@@ -42,6 +42,10 @@ object MizanCsv {
 
     // --- Lecture ---
 
+    /** Le texte ressemble-t-il à une réponse au format Mizan ? (en-tête présent) */
+    fun looksLikeMizan(text: String): Boolean =
+        norm(text).replace(" ", "").contains("date;type;montant")
+
     fun parse(text: String): Result {
         val out = mutableListOf<Expense>()
         var ignored = 0

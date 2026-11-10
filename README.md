@@ -17,19 +17,18 @@ Kotlin · Jetpack Compose · Room · minSdk 26 (Android 8).
   (dépassement en rouge). Budgets par défaut : 2 500 dinars au total.
 - **Profil** : réglages (affichage seulement pour l'instant).
 
-### Intégration avec l'app Claude (v0.6)
+### Avec Claude (v0.7) — tout depuis l'accueil
 
 Mizan reste 100 % locale (aucun accès internet, aucune clé) : les échanges passent
-par le **partage Android** avec l'application Claude installée sur le téléphone.
+par le **partage Android** avec l'application Claude du téléphone.
+Une seule carte « Avec Claude » sur l'accueil :
 
-- **Bilan du mois** (Budgets, ou Profil → Claude) : envoie à Claude une consigne,
-  les totaux, les budgets et les transactions du mois. Claude répond avec un bilan et des conseils.
-- **Préparer une demande** : envoie à Claude la consigne qui lui explique le format Mizan.
-  On ajoute la photo d'un ticket, une facture ou une liste, et Claude répond en lignes CSV.
-- **Importer depuis Claude** : partager la réponse de Claude vers Mizan (ou la copier puis
-  « Coller »). Aperçu des transactions reconnues, puis import. Un fichier `.csv` partagé
-  vers Mizan est aussi accepté.
-- **Exporter en CSV** (Profil → Données) : toutes les transactions, à envoyer où l'on veut.
+- **Bilan** : envoie le mois (consigne, totaux, budgets, transactions) à Claude.
+- **Ticket** : photo ou galerie → la photo et la consigne partent ensemble vers Claude,
+  qui répond en lignes au format Mizan.
+- **Retour automatique** : partager la réponse de Claude vers Mizan, **ou simplement la copier**
+  et revenir dans Mizan : la réponse est détectée et Mizan propose « Ajouter » en un geste.
+- **Exporter en CSV** reste dans Profil → Données.
 
 Format d'échange (`util/MizanCsv.kt`) :
 

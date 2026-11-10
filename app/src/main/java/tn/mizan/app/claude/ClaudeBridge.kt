@@ -1,6 +1,7 @@
 package tn.mizan.app.claude
 
 import android.content.ActivityNotFoundException
+import android.content.ClipData
 import android.content.Context
 import android.content.Intent
 import android.net.Uri
@@ -76,10 +77,10 @@ object ClaudeBridge {
         append(MizanCsv.export(state.expenses))
     }
 
-    /** Consigne à envoyer à Claude avec un ticket, une facture ou une liste, pour obtenir des lignes importables. */
+    /** Consigne envoyée avec la photo du ticket, pour obtenir des lignes importables dans Mizan. */
     fun importPrompt(today: LocalDate = LocalDate.now()): String = """
-        Je vais t'envoyer un ticket de caisse, une facture, une capture de relevé ou une liste de dépenses.
-        Convertis-le pour mon application Mizan (dinar tunisien).
+        Voici la photo d'un ticket de caisse ou d'une facture.
+        Convertis-la pour mon application Mizan (dinar tunisien).
         Réponds UNIQUEMENT avec les lignes CSV ci-dessous, séparateur point-virgule, avec cet en-tête exact :
         ${MizanCsv.HEADER}
         - date : AAAA-MM-JJ (si absente, $today)
@@ -88,8 +89,49 @@ object ClaudeBridge {
         - categorie : Courses, Transport, Loisirs ou Factures
         - paiement : Especes ou Carte (Especes par défaut)
         - note : courte description (sans point-virgule)
-        Une ligne par achat ou par ticket, selon ce qui est le plus utile. Je partagerai ensuite ta réponse vers Mizan pour l'importer.
+        Une seule ligne par ticket (le total), sauf si les achats relèvent de catégories différentes.
     """.trimIndent()
+
+    /** Fichier où l'appareil photo enregistre le ticket, partageable avec Claude. */
+    fun newTicketFile(context: Context): File {
+        val dir = File(context.cacheDir, "tickets").apply { mkdirs() }
+        dir.listFiles()?.forEach { it.delete() }
+        return File(dir, "ticket-${System.currentTimeMillis()}.jpg")
+    }
+
+    fun uriFor(context: Context, file: File): Uri =
+        FileProvider.getUriForFile(context, "${context.packageName}.fileprovider", file)
+
+    /** Copie une image choisie dans la galerie, pour pouvoir la transmettre à Claude. */
+    fun copyToTicket(context: Context, source: Uri): File? = try {
+        val file = newTicketFile(context)
+        context.contentResolver.openInputStream(source)?.use { input ->
+            file.outputStream().use { input.copyTo(it) }
+        }
+        file.takeIf { it.length() > 0 }
+    } catch (_: Exception) {
+        null
+    }
+
+    /** Envoie la photo du ticket et la consigne à Claude, en un seul geste. */
+    fun shareTicket(context: Context, file: File) {
+        val uri = uriFor(context, file)
+        val send = Intent(Intent.ACTION_SEND).apply {
+            type = "image/jpeg"
+            putExtra(Intent.EXTRA_STREAM, uri)
+            putExtra(Intent.EXTRA_TEXT, importPrompt())
+            clipData = ClipData.newRawUri("ticket", uri)
+            addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+        }
+        if (isInstalled(context)) {
+            try {
+                context.startActivity(Intent(send).setPackage(PACKAGE))
+                return
+            } catch (_: ActivityNotFoundException) {
+            }
+        }
+        safeStart(context, Intent.createChooser(send, "Envoyer à Claude"))
+    }
 
     /** Exporte toutes les transactions en fichier CSV et ouvre le menu de partage. */
     fun shareCsvFile(context: Context, expenses: List<Expense>) {
@@ -100,7 +142,7 @@ object ClaudeBridge {
         val dir = File(context.cacheDir, "exports").apply { mkdirs() }
         val file = File(dir, "mizan-${LocalDate.now()}.csv")
         file.writeText(MizanCsv.export(expenses), Charsets.UTF_8)
-        val uri = FileProvider.getUriForFile(context, "${context.packageName}.fileprovider", file)
+        val uri = uriFor(context, file)
         val send = Intent(Intent.ACTION_SEND).apply {
             type = "text/csv"
             putExtra(Intent.EXTRA_STREAM, uri)
