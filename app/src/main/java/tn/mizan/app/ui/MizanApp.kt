@@ -1,15 +1,7 @@
 package tn.mizan.app.ui
 
-import android.app.Activity
-import android.content.ActivityNotFoundException
-import android.content.Intent
-import android.speech.RecognizerIntent
-import androidx.activity.compose.rememberLauncherForActivityResult
-import androidx.activity.result.contract.ActivityResultContracts
-import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -37,7 +29,6 @@ import androidx.compose.material3.SnackbarResult
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -88,49 +79,16 @@ object Routes {
     const val PROFILE = "profile"
 }
 
-/**
- * @param quickRequest augmente à chaque ouverture par le raccourci « Dépense rapide » :
- * on saute alors le splash et on lance directement la dictée.
- */
 @Composable
-fun MizanApp(quickRequest: Int = 0, vm: MizanViewModel = viewModel()) {
-    var showSplash by rememberSaveable { mutableStateOf(quickRequest == 0) }
+fun MizanApp(vm: MizanViewModel = viewModel()) {
+    var showSplash by rememberSaveable { mutableStateOf(true) }
     val snackbar = remember { SnackbarHostState() }
     val scope = rememberCoroutineScope()
 
-    // Saisie rapide (partagée entre l'accueil, le bouton + et le raccourci)
+    // Saisie rapide (barre de l'accueil)
     var quickText by rememberSaveable { mutableStateOf("") }
     var preview by remember { mutableStateOf<QuickEntry?>(null) }
     var editPrefill by remember { mutableStateOf<QuickEntry?>(null) }
-
-    val voiceLauncher = rememberLauncherForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
-        val spoken = result.data?.getStringArrayListExtra(RecognizerIntent.EXTRA_RESULTS)?.firstOrNull()
-        if (result.resultCode == Activity.RESULT_OK && !spoken.isNullOrBlank()) {
-            quickText = spoken
-            preview = QuickParser.parse(spoken)
-        }
-    }
-
-    fun launchVoice() {
-        val intent = Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH).apply {
-            putExtra(RecognizerIntent.EXTRA_LANGUAGE_MODEL, RecognizerIntent.LANGUAGE_MODEL_FREE_FORM)
-            putExtra(RecognizerIntent.EXTRA_LANGUAGE, "fr-FR")
-            putExtra(RecognizerIntent.EXTRA_PROMPT, "Ex. : 20 dinars taxi")
-            putExtra(RecognizerIntent.EXTRA_PREFER_OFFLINE, true)
-        }
-        try {
-            voiceLauncher.launch(intent)
-        } catch (e: ActivityNotFoundException) {
-            scope.launch { snackbar.showSnackbar("La reconnaissance vocale n’est pas disponible sur ce téléphone.") }
-        }
-    }
-
-    LaunchedEffect(quickRequest) {
-        if (quickRequest > 0) {
-            showSplash = false
-            launchVoice()
-        }
-    }
 
     if (showSplash) {
         AnimatedSplash(onFinished = { showSplash = false })
@@ -139,8 +97,6 @@ fun MizanApp(quickRequest: Int = 0, vm: MizanViewModel = viewModel()) {
 
     val nav = rememberNavController()
     val state by vm.state.collectAsStateWithLifecycle()
-    val ai by vm.ai.collectAsStateWithLifecycle()
-    val review by vm.review.collectAsStateWithLifecycle()
     val backStack by nav.currentBackStackEntryAsState()
     val route = backStack?.destination?.route
     val showBar = route != Routes.ADD
@@ -187,8 +143,7 @@ fun MizanApp(quickRequest: Int = 0, vm: MizanViewModel = viewModel()) {
                     onAdd = {
                         editPrefill = null
                         nav.navigate(Routes.ADD)
-                    },
-                    onAddLongPress = { launchVoice() }
+                    }
                 )
             }
         }
@@ -200,7 +155,6 @@ fun MizanApp(quickRequest: Int = 0, vm: MizanViewModel = viewModel()) {
                     quickText = quickText,
                     onQuickTextChange = { quickText = it },
                     onQuickSubmit = { preview = QuickParser.parse(quickText) },
-                    onMic = { launchVoice() },
                     onSeeAll = { nav.navigate(Routes.TRANSACTIONS) }
                 )
             }
@@ -219,12 +173,8 @@ fun MizanApp(quickRequest: Int = 0, vm: MizanViewModel = viewModel()) {
                     }
                 )
             }
-            composable(Routes.BUDGETS) {
-                BudgetsScreen(state, aiConfigured = ai.configured, review = review, onReview = vm::requestReview)
-            }
-            composable(Routes.PROFILE) {
-                ProfileScreen(state, ai = ai, onSaveAi = vm::saveAi, onClearAiKey = vm::clearAiKey)
-            }
+            composable(Routes.BUDGETS) { BudgetsScreen(state) }
+            composable(Routes.PROFILE) { ProfileScreen(state) }
         }
     }
 
@@ -245,13 +195,11 @@ fun MizanApp(quickRequest: Int = 0, vm: MizanViewModel = viewModel()) {
 
 private data class Tab(val route: String, val label: String, val icon: ImageVector)
 
-@OptIn(ExperimentalFoundationApi::class)
 @Composable
 private fun MizanBottomBar(
     current: String?,
     onSelect: (String) -> Unit,
-    onAdd: () -> Unit,
-    onAddLongPress: () -> Unit
+    onAdd: () -> Unit
 ) {
     val left = listOf(
         Tab(Routes.HOME, "Accueil", Icons.Outlined.Home),
@@ -273,14 +221,14 @@ private fun MizanBottomBar(
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 left.forEach { TabItem(it, current == it.route, onSelect) }
-                // Bouton + : appui court = formulaire, appui long = dictée
+                // Bouton + : ouvre le formulaire
                 Box(
                     Modifier
                         .size(52.dp)
                         .clip(CircleShape)
                         .background(Emerald)
-                        .combinedClickable(onClick = onAdd, onLongClick = onAddLongPress)
-                        .semantics { contentDescription = "Ajouter une dépense (appui long : dicter)" },
+                        .clickable(onClick = onAdd)
+                        .semantics { contentDescription = "Ajouter une dépense" },
                     contentAlignment = Alignment.Center
                 ) {
                     Icon(Icons.Filled.Add, contentDescription = null, tint = Color.White)

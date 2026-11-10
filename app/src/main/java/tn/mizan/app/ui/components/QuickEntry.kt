@@ -17,7 +17,6 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.Send
 import androidx.compose.material.icons.outlined.Bolt
-import androidx.compose.material.icons.outlined.Mic
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -50,13 +49,12 @@ import tn.mizan.app.ui.theme.Slate
 import tn.mizan.app.util.Dates
 import tn.mizan.app.util.QuickEntry
 
-/** Barre de saisie rapide : on tape « 20 taxi », ou on touche le micro pour dicter. */
+/** Barre de saisie rapide : on tape « 20 taxi », puis Entrée ou la flèche. */
 @Composable
 fun QuickEntryBar(
     text: String,
     onTextChange: (String) -> Unit,
     onSubmit: () -> Unit,
-    onMic: () -> Unit,
     modifier: Modifier = Modifier
 ) {
     OutlinedTextField(
@@ -67,11 +65,7 @@ fun QuickEntryBar(
         placeholder = { Text("Ex. : 20 taxi", color = Muted) },
         leadingIcon = { Icon(Icons.Outlined.Bolt, contentDescription = null, tint = Emerald) },
         trailingIcon = {
-            if (text.isBlank()) {
-                IconButton(onClick = onMic) {
-                    Icon(Icons.Outlined.Mic, contentDescription = "Dicter une dépense", tint = Emerald)
-                }
-            } else {
+            if (text.isNotBlank()) {
                 IconButton(onClick = onSubmit) {
                     Icon(Icons.AutoMirrored.Filled.Send, contentDescription = "Analyser", tint = Emerald)
                 }

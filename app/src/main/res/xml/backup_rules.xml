@@ -1,5 +1,0 @@
-<?xml version="1.0" encoding="utf-8"?>
-<!-- La clé API chiffrée ne doit pas être sauvegardée (elle ne serait plus lisible ailleurs). -->
-<full-backup-content>
-    <exclude domain="sharedpref" path="mizan_secure.xml" />
-</full-backup-content>

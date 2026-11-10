@@ -56,7 +56,6 @@ fun HomeScreen(
     quickText: String,
     onQuickTextChange: (String) -> Unit,
     onQuickSubmit: () -> Unit,
-    onMic: () -> Unit,
     onSeeAll: () -> Unit
 ) {
     LazyColumn(
@@ -70,8 +69,7 @@ fun HomeScreen(
             QuickEntryBar(
                 text = quickText,
                 onTextChange = onQuickTextChange,
-                onSubmit = onQuickSubmit,
-                onMic = onMic
+                onSubmit = onQuickSubmit
             )
         }
         item {

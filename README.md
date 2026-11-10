@@ -1,6 +1,6 @@
 # Mizan — ميـزان
 
-Application Android de suivi de dépenses personnelles, 100 % locale.
+Application Android de suivi de dépenses personnelles, 100 % locale (aucun accès internet).
 Kotlin · Jetpack Compose · Room · minSdk 26 (Android 8).
 
 ## Ce que contient cette ébauche (v0.1)
@@ -17,18 +17,15 @@ Kotlin · Jetpack Compose · Room · minSdk 26 (Android 8).
   (dépassement en rouge). Budgets par défaut : 2 500 dinars au total.
 - **Profil** : réglages (affichage seulement pour l'instant).
 
-### Saisie rapide (v0.2) — hors ligne, sans IA
+### Saisie rapide — hors ligne, sans IA
 
-Écrire ou dicter une phrase comme « 20 taxi », « 3.500 café hier »,
+Écrire une phrase comme « 20 taxi », « 3.500 café hier »,
 « 20 dinars 500 épicerie carte » ou « salaire 1500 ». L'app comprend :
 le montant, la catégorie (mots-clés : taxi, louage, steg, sonede, épicerie…),
 la date (« hier », « avant-hier »), le paiement (« carte », « espèces »)
 et les revenus (« salaire », « reçu »…). Le reste devient la note.
 
-Trois accès :
-- la barre « Ex. : 20 taxi » sur l'accueil (clavier, ou micro pour dicter) ;
-- un **appui long sur le bouton +** : dictée directe ;
-- un **appui long sur l'icône Mizan** → raccourci « Dépense rapide ».
+Accès : la barre « Ex. : 20 taxi » sur l'accueil (au clavier).
 
 Une carte de confirmation montre ce qui a été compris : **Valider**
 (avec « Annuler » pendant quelques secondes) ou **Modifier** (formulaire pré-rempli).
@@ -69,13 +66,3 @@ app/src/main/java/tn/mizan/app/
 - Polices Poppins / Inter / Cairo
 - Modifier les budgets, export CSV, sauvegarde
 - Historique des mois précédents
-
-### Bilan du mois par l'IA (v0.3) — facultatif
-
-- **Profil → Intelligence artificielle** : coller sa clé API OpenAI (et choisir le modèle,
-  `gpt-4o-mini` par défaut). La clé est **chiffrée sur le téléphone** (Android Keystore),
-  exclue des sauvegardes, et n'est envoyée qu'à OpenAI. **Elle n'est jamais dans le code
-  ni sur GitHub** : ne la committez pas.
-- **Budgets → Bilan du mois** : n'envoie que les totaux (revenus, dépenses, budgets par
-  catégorie, jour du mois), jamais les notes ni la liste des transactions.
-- Sans clé, la carte est masquée et l'app reste 100 % locale.
