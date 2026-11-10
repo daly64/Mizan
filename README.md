@@ -69,3 +69,13 @@ app/src/main/java/tn/mizan/app/
 - Polices Poppins / Inter / Cairo
 - Modifier les budgets, export CSV, sauvegarde
 - Historique des mois précédents
+
+### Bilan du mois par l'IA (v0.3) — facultatif
+
+- **Profil → Intelligence artificielle** : coller sa clé API OpenAI (et choisir le modèle,
+  `gpt-4o-mini` par défaut). La clé est **chiffrée sur le téléphone** (Android Keystore),
+  exclue des sauvegardes, et n'est envoyée qu'à OpenAI. **Elle n'est jamais dans le code
+  ni sur GitHub** : ne la committez pas.
+- **Budgets → Bilan du mois** : n'envoie que les totaux (revenus, dépenses, budgets par
+  catégorie, jour du mois), jamais les notes ni la liste des transactions.
+- Sans clé, la carte est masquée et l'app reste 100 % locale.

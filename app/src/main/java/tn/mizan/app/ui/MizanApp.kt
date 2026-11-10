@@ -139,6 +139,8 @@ fun MizanApp(quickRequest: Int = 0, vm: MizanViewModel = viewModel()) {
 
     val nav = rememberNavController()
     val state by vm.state.collectAsStateWithLifecycle()
+    val ai by vm.ai.collectAsStateWithLifecycle()
+    val review by vm.review.collectAsStateWithLifecycle()
     val backStack by nav.currentBackStackEntryAsState()
     val route = backStack?.destination?.route
     val showBar = route != Routes.ADD
@@ -217,8 +219,12 @@ fun MizanApp(quickRequest: Int = 0, vm: MizanViewModel = viewModel()) {
                     }
                 )
             }
-            composable(Routes.BUDGETS) { BudgetsScreen(state) }
-            composable(Routes.PROFILE) { ProfileScreen(state) }
+            composable(Routes.BUDGETS) {
+                BudgetsScreen(state, aiConfigured = ai.configured, review = review, onReview = vm::requestReview)
+            }
+            composable(Routes.PROFILE) {
+                ProfileScreen(state, ai = ai, onSaveAi = vm::saveAi, onClearAiKey = vm::clearAiKey)
+            }
         }
     }
 

@@ -16,6 +16,11 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.outlined.AutoAwesome
+import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -28,6 +33,7 @@ import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import tn.mizan.app.ai.ReviewState
 import tn.mizan.app.data.Category
 import tn.mizan.app.ui.MonthState
 import tn.mizan.app.ui.components.IconCircle
@@ -45,7 +51,12 @@ import tn.mizan.app.util.Money
 import kotlin.math.roundToInt
 
 @Composable
-fun BudgetsScreen(state: MonthState) {
+fun BudgetsScreen(
+    state: MonthState,
+    aiConfigured: Boolean,
+    review: ReviewState,
+    onReview: () -> Unit
+) {
     LazyColumn(
         Modifier.fillMaxSize(),
         contentPadding = PaddingValues(20.dp),
@@ -58,6 +69,9 @@ fun BudgetsScreen(state: MonthState) {
             }
         }
         item { OverviewCard(state) }
+        if (aiConfigured) {
+            item { AiReviewCard(review, onReview) }
+        }
         item { SectionHeader("Par catégorie") }
         items(Category.entries) { c -> CategoryBudgetCard(c, state.spentBy(c), state.budgets[c] ?: 0L) }
     }
@@ -151,6 +165,42 @@ private fun CategoryBudgetCard(category: Category, spent: Long, limit: Long) {
                     fontSize = 12.sp,
                     color = if (over) Danger else Muted
                 )
+            }
+        }
+    }
+}
+
+@Composable
+private fun AiReviewCard(review: ReviewState, onReview: () -> Unit) {
+    MizanCard(Modifier.fillMaxWidth()) {
+        Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                IconCircle(Icons.Outlined.AutoAwesome, 36.dp, tint = Gold, background = Mint)
+                Spacer(Modifier.width(12.dp))
+                Column(Modifier.weight(1f)) {
+                    Text("Bilan du mois", fontSize = 15.sp, fontWeight = FontWeight.SemiBold, color = Slate)
+                    Text("Par l’IA, à partir de tes totaux", fontSize = 12.sp, color = Muted)
+                }
+            }
+            when (review) {
+                is ReviewState.Done -> Text(review.text, fontSize = 14.sp, color = Slate, lineHeight = 21.sp)
+                is ReviewState.Error -> Text(review.message, fontSize = 13.sp, color = Danger)
+                else -> {}
+            }
+            Button(
+                onClick = onReview,
+                enabled = review !is ReviewState.Loading,
+                modifier = Modifier.fillMaxWidth().height(46.dp),
+                shape = RoundedCornerShape(14.dp),
+                colors = ButtonDefaults.buttonColors(containerColor = Emerald)
+            ) {
+                if (review is ReviewState.Loading) {
+                    CircularProgressIndicator(Modifier.size(20.dp), color = Color.White, strokeWidth = 2.dp)
+                    Spacer(Modifier.width(10.dp))
+                    Text("Analyse en cours…")
+                } else {
+                    Text(if (review is ReviewState.Done) "Refaire le bilan" else "Obtenir mon bilan", fontWeight = FontWeight.SemiBold)
+                }
             }
         }
     }
