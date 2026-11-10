@@ -16,6 +16,10 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.outlined.AutoAwesome
+import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -45,7 +49,7 @@ import tn.mizan.app.util.Money
 import kotlin.math.roundToInt
 
 @Composable
-fun BudgetsScreen(state: MonthState) {
+fun BudgetsScreen(state: MonthState, onClaudeReview: () -> Unit) {
     LazyColumn(
         Modifier.fillMaxSize(),
         contentPadding = PaddingValues(20.dp),
@@ -58,6 +62,7 @@ fun BudgetsScreen(state: MonthState) {
             }
         }
         item { OverviewCard(state) }
+        item { ClaudeReviewCard(onClaudeReview) }
         item { SectionHeader("Par catégorie") }
         items(Category.entries) { c -> CategoryBudgetCard(c, state.spentBy(c), state.budgets[c] ?: 0L) }
     }
@@ -156,3 +161,26 @@ private fun CategoryBudgetCard(category: Category, spent: Long, limit: Long) {
     }
 }
 
+@Composable
+private fun ClaudeReviewCard(onClick: () -> Unit) {
+    MizanCard(Modifier.fillMaxWidth()) {
+        Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                IconCircle(Icons.Outlined.AutoAwesome, 36.dp, tint = Gold, background = Mint)
+                Spacer(Modifier.width(12.dp))
+                Column(Modifier.weight(1f)) {
+                    Text("Bilan avec Claude", fontSize = 15.sp, fontWeight = FontWeight.SemiBold, color = Slate)
+                    Text("Envoie ton mois à l’app Claude pour un bilan et des conseils", fontSize = 12.sp, color = Muted)
+                }
+            }
+            Button(
+                onClick = onClick,
+                modifier = Modifier.fillMaxWidth().height(46.dp),
+                shape = RoundedCornerShape(14.dp),
+                colors = ButtonDefaults.buttonColors(containerColor = Emerald)
+            ) {
+                Text("Partager le mois avec Claude", fontWeight = FontWeight.SemiBold)
+            }
+        }
+    }
+}

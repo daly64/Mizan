@@ -17,6 +17,27 @@ Kotlin · Jetpack Compose · Room · minSdk 26 (Android 8).
   (dépassement en rouge). Budgets par défaut : 2 500 dinars au total.
 - **Profil** : réglages (affichage seulement pour l'instant).
 
+### Intégration avec l'app Claude (v0.6)
+
+Mizan reste 100 % locale (aucun accès internet, aucune clé) : les échanges passent
+par le **partage Android** avec l'application Claude installée sur le téléphone.
+
+- **Bilan du mois** (Budgets, ou Profil → Claude) : envoie à Claude une consigne,
+  les totaux, les budgets et les transactions du mois. Claude répond avec un bilan et des conseils.
+- **Préparer une demande** : envoie à Claude la consigne qui lui explique le format Mizan.
+  On ajoute la photo d'un ticket, une facture ou une liste, et Claude répond en lignes CSV.
+- **Importer depuis Claude** : partager la réponse de Claude vers Mizan (ou la copier puis
+  « Coller »). Aperçu des transactions reconnues, puis import. Un fichier `.csv` partagé
+  vers Mizan est aussi accepté.
+- **Exporter en CSV** (Profil → Données) : toutes les transactions, à envoyer où l'on veut.
+
+Format d'échange (`util/MizanCsv.kt`) :
+
+```
+date;type;montant;categorie;paiement;note
+2026-11-10;depense;12.500;Transport;Especes;Taxi
+```
+
 ## Ouvrir et lancer
 
 1. Ouvrir le dossier `Mizan` dans **Android Studio** (Ladybug ou plus récent).
@@ -47,5 +68,5 @@ app/src/main/java/tn/mizan/app/
 ## Prochaines étapes
 
 - Polices Poppins / Inter / Cairo
-- Modifier les budgets, export CSV, sauvegarde
+- Modifier les budgets, sauvegarde
 - Historique des mois précédents

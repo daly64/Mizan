@@ -17,7 +17,11 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.outlined.KeyboardArrowRight
+import androidx.compose.material.icons.automirrored.outlined.OpenInNew
+import androidx.compose.material.icons.automirrored.outlined.ReceiptLong
+import androidx.compose.material.icons.outlined.AutoAwesome
 import androidx.compose.material.icons.outlined.CalendarMonth
+import androidx.compose.material.icons.outlined.FileUpload
 import androidx.compose.material.icons.outlined.CloudUpload
 import androidx.compose.material.icons.outlined.CreditCard
 import androidx.compose.material.icons.outlined.FileDownload
@@ -53,7 +57,15 @@ import tn.mizan.app.ui.theme.Muted
 import tn.mizan.app.ui.theme.Slate
 
 @Composable
-fun ProfileScreen(state: MonthState) {
+fun ProfileScreen(
+    state: MonthState,
+    claudeInstalled: Boolean,
+    onClaudeReview: () -> Unit,
+    onClaudeRequest: () -> Unit,
+    onImport: () -> Unit,
+    onOpenClaude: () -> Unit,
+    onExportCsv: () -> Unit
+) {
     var reminder by remember { mutableStateOf(true) }
 
     Column(
@@ -98,12 +110,29 @@ fun ProfileScreen(state: MonthState) {
             SettingRow(Icons.Outlined.LightMode, "Thème") { Value("Clair") }
         }
 
+        Group("Claude") {
+            SettingRow(Icons.Outlined.AutoAwesome, "Bilan du mois avec Claude", onClick = onClaudeReview) { }
+            Divider()
+            SettingRow(Icons.AutoMirrored.Outlined.ReceiptLong, "Préparer une demande (ticket, facture…)", onClick = onClaudeRequest) { }
+            Divider()
+            SettingRow(Icons.Outlined.FileUpload, "Importer depuis Claude", onClick = onImport) { }
+            Divider()
+            SettingRow(Icons.AutoMirrored.Outlined.OpenInNew, "Ouvrir Claude", onClick = onOpenClaude) {
+                Value(if (claudeInstalled) "Installée" else "Installer")
+            }
+        }
+        Text(
+            "Rien n’est envoyé sans ton action : Mizan passe par le partage Android, sans internet ni clé.",
+            fontSize = 12.sp,
+            color = Muted
+        )
+
         Group("Données") {
-            SettingRow(Icons.Outlined.FileDownload, "Exporter en CSV") { Value("Bientôt") }
+            SettingRow(Icons.Outlined.FileDownload, "Exporter en CSV", onClick = onExportCsv) { Value("Tout") }
             Divider()
             SettingRow(Icons.Outlined.CloudUpload, "Sauvegarde") { Value("Bientôt") }
             Divider()
-            SettingRow(Icons.Outlined.Info, "À propos de Mizan") { Value("v0.5") }
+            SettingRow(Icons.Outlined.Info, "À propos de Mizan") { Value("v0.6") }
         }
     }
 

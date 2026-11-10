@@ -48,4 +48,17 @@ class MizanViewModel(app: Application) : AndroidViewModel(app) {
     fun deleteById(id: Long) {
         viewModelScope.launch { dao.deleteById(id) }
     }
+
+    /** Import depuis Claude (ou un CSV) : ajoute toutes les lignes reconnues. */
+    fun importAll(expenses: List<Expense>, onDone: (Int) -> Unit) {
+        viewModelScope.launch {
+            dao.insertAll(expenses)
+            onDone(expenses.size)
+        }
+    }
+
+    /** Toutes les transactions (tous les mois), pour l'export CSV. */
+    fun withAllExpenses(block: (List<Expense>) -> Unit) {
+        viewModelScope.launch { block(dao.allExpenses()) }
+    }
 }

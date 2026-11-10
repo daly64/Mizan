@@ -30,6 +30,9 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
+import android.widget.Toast
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -49,7 +52,9 @@ import androidx.navigation.compose.rememberNavController
 import tn.mizan.app.ui.screens.AddExpenseScreen
 import tn.mizan.app.ui.screens.AnimatedSplash
 import tn.mizan.app.ui.screens.BudgetsScreen
+import tn.mizan.app.claude.ClaudeBridge
 import tn.mizan.app.ui.screens.HomeScreen
+import tn.mizan.app.ui.screens.ImportScreen
 import tn.mizan.app.ui.screens.ProfileScreen
 import tn.mizan.app.ui.screens.TransactionsScreen
 import tn.mizan.app.ui.theme.CardWhite
@@ -64,11 +69,18 @@ object Routes {
     const val ADD = "add"
     const val BUDGETS = "budgets"
     const val PROFILE = "profile"
+    const val IMPORT = "import"
 }
 
+/**
+ * @param sharedText texte reçu par partage (réponse de Claude, fichier CSV)
+ * @param shareRequest augmente à chaque partage reçu : on ouvre alors l'écran d'import.
+ */
 @Composable
-fun MizanApp(vm: MizanViewModel = viewModel()) {
-    var showSplash by rememberSaveable { mutableStateOf(true) }
+fun MizanApp(sharedText: String? = null, shareRequest: Int = 0, vm: MizanViewModel = viewModel()) {
+    var showSplash by rememberSaveable { mutableStateOf(shareRequest == 0) }
+    var importText by rememberSaveable { mutableStateOf("") }
+    val context = LocalContext.current
     if (showSplash) {
         AnimatedSplash(onFinished = { showSplash = false })
         return
@@ -78,7 +90,21 @@ fun MizanApp(vm: MizanViewModel = viewModel()) {
     val state by vm.state.collectAsStateWithLifecycle()
     val backStack by nav.currentBackStackEntryAsState()
     val route = backStack?.destination?.route
-    val showBar = route != Routes.ADD
+    val showBar = route != Routes.ADD && route != Routes.IMPORT
+
+    LaunchedEffect(shareRequest) {
+        if (shareRequest > 0) {
+            importText = sharedText.orEmpty()
+            nav.navigate(Routes.IMPORT) { launchSingleTop = true }
+        }
+    }
+
+    val claudeReview = { ClaudeBridge.shareText(context, ClaudeBridge.monthReport(state)) }
+    val claudeRequest = { ClaudeBridge.shareText(context, ClaudeBridge.importPrompt()) }
+    val openImport = {
+        importText = ""
+        nav.navigate(Routes.IMPORT) { launchSingleTop = true }
+    }
 
     Scaffold(
         containerColor = Cream,
@@ -114,8 +140,36 @@ fun MizanApp(vm: MizanViewModel = viewModel()) {
                     }
                 )
             }
-            composable(Routes.BUDGETS) { BudgetsScreen(state) }
-            composable(Routes.PROFILE) { ProfileScreen(state) }
+            composable(Routes.BUDGETS) { BudgetsScreen(state, onClaudeReview = claudeReview) }
+            composable(Routes.PROFILE) {
+                ProfileScreen(
+                    state = state,
+                    claudeInstalled = ClaudeBridge.isInstalled(context),
+                    onClaudeReview = claudeReview,
+                    onClaudeRequest = claudeRequest,
+                    onImport = openImport,
+                    onOpenClaude = { ClaudeBridge.open(context) },
+                    onExportCsv = { vm.withAllExpenses { ClaudeBridge.shareCsvFile(context, it) } }
+                )
+            }
+            composable(Routes.IMPORT) {
+                ImportScreen(
+                    initialText = importText,
+                    onBack = { nav.popBackStack() },
+                    onAskClaude = claudeRequest,
+                    onImport = { expenses ->
+                        vm.importAll(expenses) { n ->
+                            Toast.makeText(
+                                context,
+                                "$n transaction${if (n > 1) "s" else ""} importée${if (n > 1) "s" else ""}",
+                                Toast.LENGTH_SHORT
+                            ).show()
+                        }
+                        importText = ""
+                        nav.navigate(Routes.HOME) { popUpTo(Routes.HOME) { inclusive = true } }
+                    }
+                )
+            }
         }
     }
 

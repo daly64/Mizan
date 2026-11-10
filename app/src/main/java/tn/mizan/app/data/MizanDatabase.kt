@@ -20,6 +20,12 @@ interface MizanDao {
     @Insert
     suspend fun insert(expense: Expense): Long
 
+    @Insert
+    suspend fun insertAll(expenses: List<Expense>)
+
+    @Query("SELECT * FROM expenses ORDER BY dateMillis, id")
+    suspend fun allExpenses(): List<Expense>
+
     @Delete
     suspend fun delete(expense: Expense)
 
