@@ -72,7 +72,7 @@ fun AnimatedSplash(onFinished: () -> Unit) {
         launch { lift.animateTo(1f, tween(500, easing = FastOutSlowInEasing)) }
         delay(150)
         // ميزان s'écrit de droite à gauche, comme à la plume
-        sounds.playPlume()
+        sounds.playName()
         writing.animateTo(1f, tween(1_400, easing = LinearOutSlowInEasing))
         textAlpha.animateTo(1f, tween(450))
         delay(900)

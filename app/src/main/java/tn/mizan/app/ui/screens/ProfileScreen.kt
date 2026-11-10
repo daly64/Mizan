@@ -119,7 +119,7 @@ fun ProfileScreen(state: MonthState) {
             Divider()
             SettingRow(Icons.Outlined.CloudUpload, "Sauvegarde") { Value("Bientôt") }
             Divider()
-            SettingRow(Icons.Outlined.Info, "À propos de Mizan") { Value("v0.9.2") }
+            SettingRow(Icons.Outlined.Info, "À propos de Mizan") { Value("v0.9.3") }
         }
     }
 
