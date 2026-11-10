@@ -8,9 +8,9 @@ Kotlin · Jetpack Compose · Room · minSdk 26 (Android 8).
 - **Splash** : splash système (logo sur fond émeraude), puis splash animé :
   la balance apparaît avec un rebond, puis ميزان s'écrit en calligraphie Ruqaa
   (police Aref Ruqaa embarquée, licence OFL dans `licenses/`), puis Mizan et le slogan.
-  Sons embarqués (`res/raw`, générés par `tools/generer_sons_splash.py`) : carillon + plume,
-  et « ميزان » prononcé en arabe par la synthèse vocale du téléphone (voix hors ligne uniquement),
-  muets en silencieux/vibreur, désactivables dans Profil → « Son au démarrage ».
+  Son embarqué (`res/raw/splash_calame.ogg`, généré par `tools/generer_son_calame.py`) :
+  le bruit d'un calame qui écrit ميزان, synchronisé avec le nom ; muet en silencieux/vibreur,
+  désactivable dans Profil → « Son au démarrage ».
 - **Accueil** : dépenses du mois et jauge du budget, revenus, solde,
   catégories, dernières transactions.
 - **Transactions** : recherche, filtres par catégorie, liste groupée par jour.

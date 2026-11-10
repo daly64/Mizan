@@ -2,7 +2,7 @@ package tn.mizan.app.ui.screens
 
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.FastOutSlowInEasing
-import androidx.compose.animation.core.LinearOutSlowInEasing
+import androidx.compose.animation.core.LinearEasing
 import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.spring
 import androidx.compose.animation.core.tween
@@ -64,7 +64,6 @@ fun AnimatedSplash(onFinished: () -> Unit) {
     DisposableEffect(Unit) { onDispose { sounds.release() } }
 
     LaunchedEffect(Unit) {
-        sounds.playChime()
         launch { logoAlpha.animateTo(1f, tween(400)) }
         launch { rotation.animateTo(0f, spring(Spring.DampingRatioMediumBouncy, Spring.StiffnessLow)) }
         launch { halo.animateTo(1f, tween(700, easing = FastOutSlowInEasing)) }
@@ -72,8 +71,8 @@ fun AnimatedSplash(onFinished: () -> Unit) {
         launch { lift.animateTo(1f, tween(500, easing = FastOutSlowInEasing)) }
         delay(150)
         // ميزان s'écrit de droite à gauche, comme à la plume
-        sounds.playName()
-        writing.animateTo(1f, tween(1_400, easing = LinearOutSlowInEasing))
+        sounds.playCalame()
+        writing.animateTo(1f, tween(1_400, easing = LinearEasing))
         textAlpha.animateTo(1f, tween(450))
         delay(900)
         onFinished()
