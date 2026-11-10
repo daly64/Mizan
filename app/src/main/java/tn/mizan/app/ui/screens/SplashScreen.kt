@@ -18,7 +18,10 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.ui.platform.LocalContext
+import tn.mizan.app.util.SplashSounds
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -56,8 +59,12 @@ fun AnimatedSplash(onFinished: () -> Unit) {
     val lift = remember { Animatable(0f) }
     val textAlpha = remember { Animatable(0f) }
     val writing = remember { Animatable(0f) }
+    val context = LocalContext.current
+    val sounds = remember { SplashSounds(context) }
+    DisposableEffect(Unit) { onDispose { sounds.release() } }
 
     LaunchedEffect(Unit) {
+        sounds.playChime()
         launch { logoAlpha.animateTo(1f, tween(400)) }
         launch { rotation.animateTo(0f, spring(Spring.DampingRatioMediumBouncy, Spring.StiffnessLow)) }
         launch { halo.animateTo(1f, tween(700, easing = FastOutSlowInEasing)) }
@@ -65,6 +72,7 @@ fun AnimatedSplash(onFinished: () -> Unit) {
         launch { lift.animateTo(1f, tween(500, easing = FastOutSlowInEasing)) }
         delay(150)
         // ميزان s'écrit de droite à gauche, comme à la plume
+        sounds.playPlume()
         writing.animateTo(1f, tween(1_400, easing = LinearOutSlowInEasing))
         textAlpha.animateTo(1f, tween(450))
         delay(900)

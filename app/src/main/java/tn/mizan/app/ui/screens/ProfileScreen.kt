@@ -24,6 +24,9 @@ import androidx.compose.material.icons.outlined.FileDownload
 import androidx.compose.material.icons.outlined.Info
 import androidx.compose.material.icons.outlined.LightMode
 import androidx.compose.material.icons.outlined.Notifications
+import androidx.compose.material.icons.automirrored.outlined.VolumeUp
+import androidx.compose.ui.platform.LocalContext
+import tn.mizan.app.util.SplashSounds
 import androidx.compose.material.icons.outlined.Payments
 import androidx.compose.material.icons.outlined.Person
 import androidx.compose.material3.HorizontalDivider
@@ -55,6 +58,8 @@ import tn.mizan.app.ui.theme.Slate
 @Composable
 fun ProfileScreen(state: MonthState) {
     var reminder by remember { mutableStateOf(true) }
+    val context = LocalContext.current
+    var startSound by remember { mutableStateOf(SplashSounds.isEnabled(context)) }
 
     Column(
         Modifier
@@ -87,6 +92,17 @@ fun ProfileScreen(state: MonthState) {
             Divider()
             SettingRow(Icons.Outlined.CalendarMonth, "Début du mois") { Value("Le 1er") }
             Divider()
+            SettingRow(Icons.AutoMirrored.Outlined.VolumeUp, "Son au démarrage", chevron = false) {
+                Switch(
+                    checked = startSound,
+                    onCheckedChange = {
+                        startSound = it
+                        SplashSounds.setEnabled(context, it)
+                    },
+                    colors = SwitchDefaults.colors(checkedTrackColor = Emerald)
+                )
+            }
+            Divider()
             SettingRow(Icons.Outlined.Notifications, "Rappel quotidien", chevron = false) {
                 Switch(
                     checked = reminder,
@@ -103,7 +119,7 @@ fun ProfileScreen(state: MonthState) {
             Divider()
             SettingRow(Icons.Outlined.CloudUpload, "Sauvegarde") { Value("Bientôt") }
             Divider()
-            SettingRow(Icons.Outlined.Info, "À propos de Mizan") { Value("v0.9.1") }
+            SettingRow(Icons.Outlined.Info, "À propos de Mizan") { Value("v0.9.2") }
         }
     }
 
