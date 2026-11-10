@@ -1,5 +1,21 @@
 package tn.mizan.app.ui.screens
 
+import android.widget.Toast
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.material.icons.outlined.Backup
+import androidx.compose.material.icons.outlined.DarkMode
+import androidx.compose.material.icons.outlined.Folder
+import androidx.compose.material.icons.outlined.Restore
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.RadioButton
+import androidx.compose.material3.RadioButtonDefaults
+import androidx.compose.material3.TextButton
+import androidx.compose.runtime.mutableLongStateOf
+import tn.mizan.app.data.Backup
+import tn.mizan.app.ui.theme.Danger
+import tn.mizan.app.ui.theme.ThemeMode
+import tn.mizan.app.ui.theme.ThemeSettings
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -56,10 +72,38 @@ import tn.mizan.app.ui.theme.Muted
 import tn.mizan.app.ui.theme.Slate
 
 @Composable
-fun ProfileScreen(state: MonthState) {
+fun ProfileScreen(
+    state: MonthState,
+    onRestore: (Backup.Content, () -> Unit) -> Unit,
+    onBackupNow: ((Boolean) -> Unit) -> Unit
+) {
     var reminder by remember { mutableStateOf(true) }
     val context = LocalContext.current
     var startSound by remember { mutableStateOf(SplashSounds.isEnabled(context)) }
+    var showTheme by remember { mutableStateOf(false) }
+    var lastSaved by remember { mutableLongStateOf(Backup.lastSaved(context)) }
+    var folderName by remember { mutableStateOf(Backup.folderName(context)) }
+    var toRestore by remember { mutableStateOf<Backup.Content?>(null) }
+
+    fun toast(text: String) = Toast.makeText(context, text, Toast.LENGTH_SHORT).show()
+    fun saveNow() = onBackupNow { ok ->
+        lastSaved = Backup.lastSaved(context)
+        toast(if (ok) "Sauvegarde faite" else "Rien à sauvegarder pour l’instant")
+    }
+
+    val pickFolder = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocumentTree()) { uri ->
+        if (uri != null) {
+            runCatching { Backup.setFolder(context, uri) }
+                .onSuccess { folderName = Backup.folderName(context); saveNow() }
+                .onFailure { toast("Impossible d’utiliser ce dossier") }
+        }
+    }
+    val pickBackup = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
+        if (uri != null) {
+            val content = Backup.read(context, uri)
+            if (content == null) toast("Ce fichier n’est pas une sauvegarde Mizan") else toRestore = content
+        }
+    }
 
     Column(
         Modifier
@@ -111,18 +155,89 @@ fun ProfileScreen(state: MonthState) {
                 )
             }
             Divider()
-            SettingRow(Icons.Outlined.LightMode, "Thème") { Value("Clair") }
+            SettingRow(Icons.Outlined.DarkMode, "Thème", onClick = { showTheme = true }) {
+                Value(ThemeSettings.mode.label)
+            }
         }
 
         Group("Données") {
             SettingRow(Icons.Outlined.FileDownload, "Exporter en CSV") { Value("Bientôt") }
             Divider()
-            SettingRow(Icons.Outlined.CloudUpload, "Sauvegarde") { Value("Bientôt") }
+            SettingRow(Icons.Outlined.Backup, "Sauvegarde automatique", onClick = { saveNow() }) {
+                Value(lastSavedLabel(lastSaved))
+            }
             Divider()
-            SettingRow(Icons.Outlined.Info, "À propos de Mizan") { Value("v0.9.4") }
+            SettingRow(Icons.Outlined.Folder, "Dossier de sauvegarde", onClick = { pickFolder.launch(null) }) {
+                Value(folderName ?: "Dans l’app")
+            }
+            Divider()
+            SettingRow(Icons.Outlined.Restore, "Restaurer une sauvegarde", onClick = {
+                pickBackup.launch(arrayOf("application/json", "application/octet-stream", "text/plain"))
+            }) { }
+            Divider()
+            SettingRow(Icons.Outlined.Info, "À propos de Mizan") { Value("v0.10") }
         }
+        Text(
+            "Mizan se sauvegarde tout seul chaque fois que tu quittes l’app. " +
+                "Choisis un dossier du téléphone (ex. Documents) pour garder tes sauvegardes même après une désinstallation.",
+            fontSize = 12.sp,
+            color = Muted
+        )
     }
 
+    if (showTheme) {
+        AlertDialog(
+            onDismissRequest = { showTheme = false },
+            title = { Text("Thème") },
+            text = {
+                Column {
+                    ThemeMode.entries.forEach { mode ->
+                        Row(
+                            Modifier
+                                .fillMaxWidth()
+                                .clickable {
+                                    ThemeSettings.set(context, mode)
+                                    showTheme = false
+                                }
+                                .padding(vertical = 6.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            RadioButton(
+                                selected = ThemeSettings.mode == mode,
+                                onClick = {
+                                    ThemeSettings.set(context, mode)
+                                    showTheme = false
+                                },
+                                colors = RadioButtonDefaults.colors(selectedColor = Emerald)
+                            )
+                            Text(mode.label, fontSize = 15.sp, color = Slate)
+                        }
+                    }
+                }
+            },
+            confirmButton = { TextButton(onClick = { showTheme = false }) { Text("Fermer", color = Emerald) } }
+        )
+    }
+
+    toRestore?.let { content ->
+        AlertDialog(
+            onDismissRequest = { toRestore = null },
+            title = { Text("Restaurer cette sauvegarde ?") },
+            text = {
+                Text(
+                    "${content.expenses.size} transactions, sauvegardées ${lastSavedLabel(content.savedAt).lowercase()}. " +
+                        "Tes données actuelles seront remplacées."
+                )
+            },
+            confirmButton = {
+                TextButton(onClick = {
+                    onRestore(content) { toast("Sauvegarde restaurée") }
+                    toRestore = null
+                }) { Text("Restaurer", color = Danger) }
+            },
+            dismissButton = { TextButton(onClick = { toRestore = null }) { Text("Annuler", color = Muted) } }
+        )
+    }
 }
 
 @Composable
@@ -166,4 +281,16 @@ private fun Value(text: String) {
 @Composable
 private fun Divider() {
     HorizontalDivider(color = Line)
+}
+
+private fun lastSavedLabel(millis: Long): String {
+    if (millis <= 0L) return "Pas encore"
+    val time = java.time.Instant.ofEpochMilli(millis).atZone(java.time.ZoneId.systemDefault())
+    val hour = time.format(java.time.format.DateTimeFormatter.ofPattern("HH:mm"))
+    val date = time.toLocalDate()
+    return when (date) {
+        java.time.LocalDate.now() -> "Aujourd’hui à $hour"
+        java.time.LocalDate.now().minusDays(1) -> "Hier à $hour"
+        else -> date.format(java.time.format.DateTimeFormatter.ofPattern("d MMM", java.util.Locale.FRENCH)) + " à $hour"
+    }
 }

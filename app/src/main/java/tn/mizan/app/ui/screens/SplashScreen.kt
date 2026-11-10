@@ -39,9 +39,9 @@ import androidx.compose.ui.unit.sp
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import tn.mizan.app.ui.components.MizanLogo
-import tn.mizan.app.ui.theme.Cream
-import tn.mizan.app.ui.theme.Emerald
-import tn.mizan.app.ui.theme.Gold
+import tn.mizan.app.ui.theme.BrandCream as Cream
+import tn.mizan.app.ui.theme.BrandEmerald as Emerald
+import tn.mizan.app.ui.theme.BrandGold as Gold
 
 /**
  * Splash animé, comme dans le prototype Figma :

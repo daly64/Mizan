@@ -31,6 +31,23 @@ interface MizanDao {
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun upsertBudget(budget: Budget)
+
+    // --- Sauvegarde et restauration ---
+
+    @Query("SELECT * FROM expenses ORDER BY dateMillis, id")
+    suspend fun allExpenses(): List<Expense>
+
+    @Query("SELECT * FROM budgets")
+    suspend fun allBudgets(): List<Budget>
+
+    @Query("DELETE FROM expenses")
+    suspend fun deleteAllExpenses()
+
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun insertAll(expenses: List<Expense>)
+
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun upsertBudgets(budgets: List<Budget>)
 }
 
 @Database(entities = [Expense::class, Budget::class], version = 1, exportSchema = false)

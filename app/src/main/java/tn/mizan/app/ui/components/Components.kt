@@ -43,6 +43,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import tn.mizan.app.data.Category
 import tn.mizan.app.data.Expense
+import tn.mizan.app.ui.theme.BrandCream
 import tn.mizan.app.ui.theme.CardWhite
 import tn.mizan.app.ui.theme.Cream
 import tn.mizan.app.ui.theme.Emerald
@@ -107,7 +108,7 @@ fun MizanLogo(
     size: Dp,
     modifier: Modifier = Modifier,
     circle: Color = Emerald,
-    lines: Color = Cream,
+    lines: Color = BrandCream,
     accent: Color = Gold
 ) {
     Canvas(modifier.size(size)) {

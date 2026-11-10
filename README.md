@@ -21,6 +21,16 @@ Kotlin · Jetpack Compose · Room · minSdk 26 (Android 8).
   (dépassement en rouge). Budgets par défaut : 2 500 dinars au total.
 - **Profil** : réglages (affichage seulement pour l'instant).
 
+### Thème clair / sombre et sauvegarde automatique (v0.10)
+
+- **Thème** (Profil → Thème) : Comme le téléphone, Clair ou Sombre. Le changement est immédiat.
+  Le splash garde ses couleurs de marque.
+- **Sauvegarde automatique** à la fin de chaque session (quand on quitte l'app) :
+  `mizan-derniere.json` + une copie par jour (7 jours), dans le dossier de l'app,
+  et dans un dossier du téléphone si on en choisit un (Profil → Dossier de sauvegarde).
+  Jamais écrasée par une base vide. **Restaurer une sauvegarde** remplace les données
+  par celles d'un fichier choisi. Tout reste local (`data/Backup.kt`).
+
 ## Ouvrir et lancer
 
 1. Ouvrir le dossier `Mizan` dans **Android Studio** (Ladybug ou plus récent).

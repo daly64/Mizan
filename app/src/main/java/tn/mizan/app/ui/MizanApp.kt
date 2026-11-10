@@ -115,7 +115,9 @@ fun MizanApp(vm: MizanViewModel = viewModel()) {
                 )
             }
             composable(Routes.BUDGETS) { BudgetsScreen(state) }
-            composable(Routes.PROFILE) { ProfileScreen(state) }
+            composable(Routes.PROFILE) {
+                ProfileScreen(state, onRestore = vm::restore, onBackupNow = vm::backupNow)
+            }
         }
     }
 

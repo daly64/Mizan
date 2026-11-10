@@ -8,7 +8,9 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
+import androidx.room.withTransaction
 import tn.mizan.app.MizanApplication
+import tn.mizan.app.data.Backup
 import tn.mizan.app.data.Category
 import tn.mizan.app.data.Expense
 import tn.mizan.app.util.Dates
@@ -29,7 +31,8 @@ data class MonthState(
 }
 
 class MizanViewModel(app: Application) : AndroidViewModel(app) {
-    private val dao = (app as MizanApplication).database.dao()
+    private val db = (app as MizanApplication).database
+    private val dao = db.dao()
     private val range = Dates.currentMonthRange()
 
     val state: StateFlow<MonthState> =
@@ -47,5 +50,22 @@ class MizanViewModel(app: Application) : AndroidViewModel(app) {
 
     fun deleteById(id: Long) {
         viewModelScope.launch { dao.deleteById(id) }
+    }
+
+    /** Remplace toutes les données par celles d'une sauvegarde. */
+    fun restore(content: Backup.Content, onDone: () -> Unit) {
+        viewModelScope.launch {
+            db.withTransaction {
+                dao.deleteAllExpenses()
+                dao.insertAll(content.expenses)
+                if (content.budgets.isNotEmpty()) dao.upsertBudgets(content.budgets)
+            }
+            onDone()
+        }
+    }
+
+    /** Sauvegarde tout de suite (bouton « Sauvegarder maintenant »). */
+    fun backupNow(onDone: (Boolean) -> Unit) {
+        viewModelScope.launch { onDone(Backup.saveNow(getApplication(), db)) }
     }
 }

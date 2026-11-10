@@ -69,14 +69,16 @@ private fun OverviewCard(state: MonthState) {
     MizanCard(Modifier.fillMaxWidth()) {
         Row(Modifier.padding(16.dp), verticalAlignment = Alignment.CenterVertically) {
             Box(Modifier.size(110.dp), contentAlignment = Alignment.Center) {
+                val trackColor = Mint
+                val arcColor = if (ratio > 1f) Danger else Emerald
                 Canvas(Modifier.fillMaxSize()) {
                     val stroke = 14.dp.toPx()
                     val inset = stroke / 2
                     val arcSize = androidx.compose.ui.geometry.Size(size.width - stroke, size.height - stroke)
                     val topLeft = androidx.compose.ui.geometry.Offset(inset, inset)
-                    drawArc(Mint, 0f, 360f, false, topLeft, arcSize, style = Stroke(stroke))
+                    drawArc(trackColor, 0f, 360f, false, topLeft, arcSize, style = Stroke(stroke))
                     drawArc(
-                        if (ratio > 1f) Danger else Emerald,
+                        arcColor,
                         -90f,
                         360f * ratio.coerceIn(0f, 1f),
                         false,
