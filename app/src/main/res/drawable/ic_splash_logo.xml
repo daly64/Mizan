@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Logo Mizan (balance) en crème, pour le splash système. Zone 288dp, logo centré dans le cercle de 192dp. -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="288dp"
+    android:height="288dp"
+    android:viewportWidth="288"
+    android:viewportHeight="288">
+    <group
+        android:translateX="54"
+        android:translateY="54"
+        android:scaleX="1.8"
+        android:scaleY="1.8">
+        <path
+            android:fillColor="#F7F1E5"
+            android:pathData="M8,50 A42,42 0 1,0 92,50 A42,42 0 1,0 8,50 Z" />
+        <path
+            android:pathData="M50,27 L50,72 M39,74 L61,74 M24,35 L76,35"
+            android:strokeColor="#0F6B5C"
+            android:strokeWidth="4"
+            android:strokeLineCap="round" />
+        <path
+            android:pathData="M28,35 L21,53 M28,35 L35,53 M72,35 L65,53 M72,35 L79,53"
+            android:strokeColor="#0F6B5C"
+            android:strokeWidth="1.5" />
+        <path
+            android:fillColor="#C9A45C"
+            android:pathData="M46.5,26 A3.5,3.5 0 1,0 53.5,26 A3.5,3.5 0 1,0 46.5,26 Z" />
+        <path
+            android:fillColor="#C9A45C"
+            android:pathData="M19,53 Q28,64 37,53 Z M63,53 Q72,64 81,53 Z" />
+    </group>
+</vector>

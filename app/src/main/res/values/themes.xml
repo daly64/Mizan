@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Thème principal : fond crème -->
+    <style name="Theme.Mizan" parent="android:Theme.Material.Light.NoActionBar">
+        <item name="android:windowBackground">@color/mizan_cream</item>
+    </style>
+
+    <!-- Splash système (Android 12+ et rétrocompatible) : logo sur fond émeraude -->
+    <style name="Theme.Mizan.Splash" parent="Theme.SplashScreen">
+        <item name="windowSplashScreenBackground">@color/mizan_emerald</item>
+        <item name="windowSplashScreenAnimatedIcon">@drawable/ic_splash_logo</item>
+        <item name="postSplashScreenTheme">@style/Theme.Mizan</item>
+    </style>
+</resources>
