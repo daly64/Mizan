@@ -70,6 +70,7 @@ import tn.mizan.app.ui.theme.Muted
 import tn.mizan.app.ui.theme.Slate
 import tn.mizan.app.util.Dates
 import tn.mizan.app.util.Money
+import tn.mizan.app.util.QuickEntry
 import java.time.Instant
 import java.time.LocalDate
 import java.time.ZoneOffset
@@ -78,13 +79,18 @@ private val amountPattern = Regex("^\\d{0,7}(\\.\\d{0,3})?$")
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun AddExpenseScreen(onBack: () -> Unit, onSave: (Expense) -> Unit) {
-    var isIncome by rememberSaveable { mutableStateOf(false) }
-    var amountText by rememberSaveable { mutableStateOf("") }
-    var category by rememberSaveable { mutableStateOf(Category.COURSES) }
-    var note by rememberSaveable { mutableStateOf("") }
-    var payment by rememberSaveable { mutableStateOf(PaymentMethod.ESPECES) }
-    var date by remember { mutableStateOf(LocalDate.now()) }
+fun AddExpenseScreen(
+    onBack: () -> Unit,
+    onSave: (Expense) -> Unit,
+    prefill: QuickEntry? = null
+) {
+    // Pré-rempli quand on vient de la saisie rapide (« Modifier »)
+    var isIncome by rememberSaveable { mutableStateOf(prefill?.isIncome ?: false) }
+    var amountText by rememberSaveable { mutableStateOf(prefill?.amountMillimes?.let { Money.toInput(it) } ?: "") }
+    var category by rememberSaveable { mutableStateOf(prefill?.category ?: Category.COURSES) }
+    var note by rememberSaveable { mutableStateOf(prefill?.note ?: "") }
+    var payment by rememberSaveable { mutableStateOf(prefill?.payment ?: PaymentMethod.ESPECES) }
+    var date by remember { mutableStateOf(prefill?.date ?: LocalDate.now()) }
     var showPicker by remember { mutableStateOf(false) }
 
     val millimes = Money.parse(amountText) ?: 0L

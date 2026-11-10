@@ -217,7 +217,8 @@ fun TransactionRow(expense: Expense, onLongClick: (() -> Unit)? = null) {
                     overflow = TextOverflow.Ellipsis
                 )
                 Text(
-                    "${Dates.dayLabel(Dates.toLocalDate(expense.dateMillis))} · ${expense.category.label}",
+                    "${Dates.dayLabel(Dates.toLocalDate(expense.dateMillis))} · " +
+                        if (expense.isIncome) "Revenu" else expense.category.label,
                     fontSize = 12.sp,
                     color = Muted
                 )

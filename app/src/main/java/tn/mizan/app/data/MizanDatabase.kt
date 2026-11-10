@@ -23,6 +23,9 @@ interface MizanDao {
     @Delete
     suspend fun delete(expense: Expense)
 
+    @Query("DELETE FROM expenses WHERE id = :id")
+    suspend fun deleteById(id: Long)
+
     @Query("SELECT * FROM budgets")
     fun budgets(): Flow<List<Budget>>
 

@@ -21,6 +21,12 @@ object Money {
 
     fun format(millimes: Long): String = parts(millimes).let { it.first + it.second }
 
+    /** Valeur à mettre dans le champ de saisie : 20000 -> « 20 », 20500 -> « 20.500 ». */
+    fun toInput(millimes: Long): String {
+        val value = abs(millimes)
+        return if (value % 1000 == 0L) "${value / 1000}" else String.format(Locale.US, "%d.%03d", value / 1000, value % 1000)
+    }
+
     /** « 64.3 » -> 64300 millimes. Renvoie null si la saisie n'est pas un nombre. */
     fun parse(input: String): Long? =
         input.replace(",", "").trim().toBigDecimalOrNull()

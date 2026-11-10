@@ -17,6 +17,23 @@ Kotlin · Jetpack Compose · Room · minSdk 26 (Android 8).
   (dépassement en rouge). Budgets par défaut : 2 500 dinars au total.
 - **Profil** : réglages (affichage seulement pour l'instant).
 
+### Saisie rapide (v0.2) — hors ligne, sans IA
+
+Écrire ou dicter une phrase comme « 20 taxi », « 3.500 café hier »,
+« 20 dinars 500 épicerie carte » ou « salaire 1500 ». L'app comprend :
+le montant, la catégorie (mots-clés : taxi, louage, steg, sonede, épicerie…),
+la date (« hier », « avant-hier »), le paiement (« carte », « espèces »)
+et les revenus (« salaire », « reçu »…). Le reste devient la note.
+
+Trois accès :
+- la barre « Ex. : 20 taxi » sur l'accueil (clavier, ou micro pour dicter) ;
+- un **appui long sur le bouton +** : dictée directe ;
+- un **appui long sur l'icône Mizan** → raccourci « Dépense rapide ».
+
+Une carte de confirmation montre ce qui a été compris : **Valider**
+(avec « Annuler » pendant quelques secondes) ou **Modifier** (formulaire pré-rempli).
+La logique est dans `util/QuickParser.kt`.
+
 Les montants sont enregistrés en **millimes** (1 dinar = 1000 millimes)
 et affichés au format `د 2,825.225`, avec le symbole Mizan du dinar.
 

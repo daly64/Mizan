@@ -1,4 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="app_name">Mizan</string>
+    <string name="shortcut_quick_short">Dépense rapide</string>
+    <string name="shortcut_quick_long">Dicter une dépense</string>
 </resources>

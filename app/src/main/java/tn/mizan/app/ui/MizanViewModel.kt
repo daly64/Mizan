@@ -37,8 +37,12 @@ class MizanViewModel(app: Application) : AndroidViewModel(app) {
             MonthState(expenses, budgets.associate { it.category to it.limitMillimes })
         }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), MonthState())
 
-    fun add(expense: Expense) {
-        viewModelScope.launch { dao.insert(expense) }
+    fun add(expense: Expense, onAdded: (Long) -> Unit = {}) {
+        viewModelScope.launch { onAdded(dao.insert(expense)) }
+    }
+
+    fun deleteById(id: Long) {
+        viewModelScope.launch { dao.deleteById(id) }
     }
 
     fun delete(expense: Expense) {
