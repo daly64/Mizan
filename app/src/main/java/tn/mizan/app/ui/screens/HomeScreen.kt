@@ -36,7 +36,6 @@ import tn.mizan.app.ui.components.EmptyHint
 import tn.mizan.app.ui.components.MizanCard
 import tn.mizan.app.ui.components.MizanLogo
 import tn.mizan.app.ui.components.MoneyText
-import tn.mizan.app.ui.components.QuickEntryBar
 import tn.mizan.app.ui.components.SectionHeader
 import tn.mizan.app.ui.components.TransactionRow
 import tn.mizan.app.ui.theme.Danger
@@ -51,13 +50,7 @@ import tn.mizan.app.util.Money
 import kotlin.math.roundToInt
 
 @Composable
-fun HomeScreen(
-    state: MonthState,
-    quickText: String,
-    onQuickTextChange: (String) -> Unit,
-    onQuickSubmit: () -> Unit,
-    onSeeAll: () -> Unit
-) {
+fun HomeScreen(state: MonthState, onSeeAll: () -> Unit) {
     LazyColumn(
         Modifier.fillMaxSize(),
         contentPadding = PaddingValues(20.dp),
@@ -65,13 +58,6 @@ fun HomeScreen(
     ) {
         item { HomeTopBar() }
         item { TotalCard(state) }
-        item {
-            QuickEntryBar(
-                text = quickText,
-                onTextChange = onQuickTextChange,
-                onSubmit = onQuickSubmit
-            )
-        }
         item {
             Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                 MiniCard("Revenus", state.income, Emerald, Modifier.weight(1f))

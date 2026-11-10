@@ -22,17 +22,12 @@ import androidx.compose.material.icons.outlined.PieChart
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Scaffold
-import androidx.compose.material3.SnackbarDuration
-import androidx.compose.material3.SnackbarHost
-import androidx.compose.material3.SnackbarHostState
-import androidx.compose.material3.SnackbarResult
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -51,10 +46,6 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
-import kotlinx.coroutines.launch
-import tn.mizan.app.data.Category
-import tn.mizan.app.data.Expense
-import tn.mizan.app.ui.components.QuickConfirmSheet
 import tn.mizan.app.ui.screens.AddExpenseScreen
 import tn.mizan.app.ui.screens.AnimatedSplash
 import tn.mizan.app.ui.screens.BudgetsScreen
@@ -66,10 +57,6 @@ import tn.mizan.app.ui.theme.Cream
 import tn.mizan.app.ui.theme.Emerald
 import tn.mizan.app.ui.theme.Line
 import tn.mizan.app.ui.theme.Muted
-import tn.mizan.app.util.Dates
-import tn.mizan.app.util.Money
-import tn.mizan.app.util.QuickEntry
-import tn.mizan.app.util.QuickParser
 
 object Routes {
     const val HOME = "home"
@@ -82,14 +69,6 @@ object Routes {
 @Composable
 fun MizanApp(vm: MizanViewModel = viewModel()) {
     var showSplash by rememberSaveable { mutableStateOf(true) }
-    val snackbar = remember { SnackbarHostState() }
-    val scope = rememberCoroutineScope()
-
-    // Saisie rapide (barre de l'accueil)
-    var quickText by rememberSaveable { mutableStateOf("") }
-    var preview by remember { mutableStateOf<QuickEntry?>(null) }
-    var editPrefill by remember { mutableStateOf<QuickEntry?>(null) }
-
     if (showSplash) {
         AnimatedSplash(onFinished = { showSplash = false })
         return
@@ -101,34 +80,8 @@ fun MizanApp(vm: MizanViewModel = viewModel()) {
     val route = backStack?.destination?.route
     val showBar = route != Routes.ADD
 
-    fun saveQuick(entry: QuickEntry) {
-        val amount = entry.amountMillimes ?: return
-        val expense = Expense(
-            amountMillimes = amount,
-            category = entry.category ?: Category.COURSES,
-            note = entry.note,
-            dateMillis = Dates.toMillis(entry.date),
-            payment = entry.payment,
-            isIncome = entry.isIncome
-        )
-        preview = null
-        quickText = ""
-        vm.add(expense) { id ->
-            scope.launch {
-                val what = if (entry.isIncome) "Revenu ajouté" else "Dépense ajoutée"
-                val result = snackbar.showSnackbar(
-                    message = "$what : ${Money.format(amount)}",
-                    actionLabel = "Annuler",
-                    duration = SnackbarDuration.Short
-                )
-                if (result == SnackbarResult.ActionPerformed) vm.deleteById(id)
-            }
-        }
-    }
-
     Scaffold(
         containerColor = Cream,
-        snackbarHost = { SnackbarHost(snackbar) },
         bottomBar = {
             if (showBar) {
                 MizanBottomBar(
@@ -140,35 +93,23 @@ fun MizanApp(vm: MizanViewModel = viewModel()) {
                             restoreState = true
                         }
                     },
-                    onAdd = {
-                        editPrefill = null
-                        nav.navigate(Routes.ADD)
-                    }
+                    onAdd = { nav.navigate(Routes.ADD) }
                 )
             }
         }
     ) { padding ->
         NavHost(nav, startDestination = Routes.HOME, modifier = Modifier.padding(padding)) {
             composable(Routes.HOME) {
-                HomeScreen(
-                    state = state,
-                    quickText = quickText,
-                    onQuickTextChange = { quickText = it },
-                    onQuickSubmit = { preview = QuickParser.parse(quickText) },
-                    onSeeAll = { nav.navigate(Routes.TRANSACTIONS) }
-                )
+                HomeScreen(state, onSeeAll = { nav.navigate(Routes.TRANSACTIONS) })
             }
             composable(Routes.TRANSACTIONS) {
                 TransactionsScreen(state, onDelete = vm::delete)
             }
             composable(Routes.ADD) {
                 AddExpenseScreen(
-                    prefill = editPrefill,
                     onBack = { nav.popBackStack() },
                     onSave = { expense ->
                         vm.add(expense)
-                        if (editPrefill != null) quickText = ""
-                        editPrefill = null
                         nav.popBackStack()
                     }
                 )
@@ -178,19 +119,6 @@ fun MizanApp(vm: MizanViewModel = viewModel()) {
         }
     }
 
-    preview?.let { entry ->
-        QuickConfirmSheet(
-            entry = entry,
-            onChange = { preview = it },
-            onConfirm = { saveQuick(entry) },
-            onEdit = {
-                editPrefill = entry
-                preview = null
-                nav.navigate(Routes.ADD)
-            },
-            onDismiss = { preview = null }
-        )
-    }
 }
 
 private data class Tab(val route: String, val label: String, val icon: ImageVector)
