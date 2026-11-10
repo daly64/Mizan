@@ -42,7 +42,13 @@ import android.os.Build
 import androidx.compose.ui.platform.LocalWindowInfo
 import java.io.File
 import tn.mizan.app.data.Expense
+import tn.mizan.app.ui.components.ClaudeBusyDialog
 import tn.mizan.app.ui.components.ImportSheet
+import tn.mizan.app.ui.components.ReviewSheet
+import tn.mizan.app.claude.ClaudeApi
+import androidx.compose.runtime.rememberCoroutineScope
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.launch
 import tn.mizan.app.ui.components.TicketSourceDialog
 import tn.mizan.app.util.MizanCsv
 import androidx.compose.runtime.LaunchedEffect
@@ -136,14 +142,66 @@ fun MizanApp(sharedText: String? = null, shareRequest: Int = 0, vm: MizanViewMod
         if (MizanCsv.looksLikeMizan(text)) offerImport(text, fromShare = false)
     }
 
+    // Claude directement dans Mizan (si une clé est enregistrée), sinon via l'app Claude
+    val claude by vm.claude.collectAsStateWithLifecycle()
+    val scope = rememberCoroutineScope()
+    var busyMessage by remember { mutableStateOf<String?>(null) }
+    var busyJob by remember { mutableStateOf<Job?>(null) }
+    var reviewText by remember { mutableStateOf<String?>(null) }
+
+    fun toast(message: String) = Toast.makeText(context, message, Toast.LENGTH_LONG).show()
+
+    fun runClaude(message: String, block: suspend () -> Unit) {
+        busyMessage = message
+        busyJob = scope.launch {
+            try {
+                block()
+            } finally {
+                busyMessage = null
+            }
+        }
+    }
+
+    fun claudeReview() {
+        val creds = vm.claudeCredentials()
+        if (creds == null) {
+            ClaudeBridge.shareText(context, ClaudeBridge.monthReport(state))
+            return
+        }
+        runClaude("Claude prépare ton bilan…") {
+            ClaudeApi.review(creds.first, creds.second, state).fold(
+                onSuccess = { reviewText = it },
+                onFailure = { toast(it.message ?: "Erreur de Claude.") }
+            )
+        }
+    }
+
+    fun handleTicket(file: File) {
+        val creds = vm.claudeCredentials()
+        if (creds == null) {
+            ClaudeBridge.shareTicket(context, file)
+            return
+        }
+        runClaude("Claude lit ton ticket…") {
+            ClaudeApi.readTicket(creds.first, creds.second, file).fold(
+                onSuccess = { answer ->
+                    val result = MizanCsv.parse(answer)
+                    if (result.expenses.isNotEmpty()) pendingImport = result.expenses
+                    else toast("Claude n’a pas trouvé de dépense sur cette photo. Essaie une photo plus nette.")
+                },
+                onFailure = { toast(it.message ?: "Erreur de Claude.") }
+            )
+        }
+    }
+
     val takePicture = rememberLauncherForActivityResult(ActivityResultContracts.TakePicture()) { ok ->
         val file = cameraFile
-        if (ok && file != null && file.length() > 0) ClaudeBridge.shareTicket(context, file)
+        if (ok && file != null && file.length() > 0) handleTicket(file)
     }
     val pickImage = rememberLauncherForActivityResult(ActivityResultContracts.PickVisualMedia()) { uri ->
         if (uri != null) {
             val file = ClaudeBridge.copyToTicket(context, uri)
-            if (file != null) ClaudeBridge.shareTicket(context, file)
+            if (file != null) handleTicket(file)
             else Toast.makeText(context, "Impossible de lire cette image.", Toast.LENGTH_SHORT).show()
         }
     }
@@ -171,7 +229,8 @@ fun MizanApp(sharedText: String? = null, shareRequest: Int = 0, vm: MizanViewMod
                 HomeScreen(
                     state = state,
                     onSeeAll = { nav.navigate(Routes.TRANSACTIONS) },
-                    onClaudeReview = { ClaudeBridge.shareText(context, ClaudeBridge.monthReport(state)) },
+                    claudeDirect = claude.configured,
+                    onClaudeReview = { claudeReview() },
                     onClaudeTicket = { showTicketChoice = true }
                 )
             }
@@ -191,6 +250,9 @@ fun MizanApp(sharedText: String? = null, shareRequest: Int = 0, vm: MizanViewMod
             composable(Routes.PROFILE) {
                 ProfileScreen(
                     state = state,
+                    claude = claude,
+                    onSaveClaude = vm::saveClaude,
+                    onClearClaudeKey = vm::clearClaudeKey,
                     onExportCsv = { vm.withAllExpenses { ClaudeBridge.shareCsvFile(context, it) } }
                 )
             }
@@ -215,6 +277,14 @@ fun MizanApp(sharedText: String? = null, shareRequest: Int = 0, vm: MizanViewMod
             },
             onDismiss = { showTicketChoice = false }
         )
+    }
+
+    busyMessage?.let { message ->
+        ClaudeBusyDialog(message, onCancel = { busyJob?.cancel() })
+    }
+
+    reviewText?.let { text ->
+        ReviewSheet(text, onDismiss = { reviewText = null })
     }
 
     pendingImport?.let { expenses ->

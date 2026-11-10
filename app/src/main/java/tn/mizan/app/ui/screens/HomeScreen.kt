@@ -54,6 +54,7 @@ import kotlin.math.roundToInt
 fun HomeScreen(
     state: MonthState,
     onSeeAll: () -> Unit,
+    claudeDirect: Boolean,
     onClaudeReview: () -> Unit,
     onClaudeTicket: () -> Unit
 ) {
@@ -70,7 +71,7 @@ fun HomeScreen(
                 MiniCard("Solde disponible", state.balance, Slate, Modifier.weight(1f))
             }
         }
-        item { ClaudeCard(onReview = onClaudeReview, onTicket = onClaudeTicket) }
+        item { ClaudeCard(direct = claudeDirect, onReview = onClaudeReview, onTicket = onClaudeTicket) }
         item { SectionHeader("Catégories") }
         item {
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {

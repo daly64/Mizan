@@ -30,6 +30,18 @@ Une seule carte « Avec Claude » sur l'accueil :
   et revenir dans Mizan : la réponse est détectée et Mizan propose « Ajouter » en un geste.
 - **Exporter en CSV** reste dans Profil → Données.
 
+### Claude directement dans Mizan (v0.8) — facultatif
+
+- **Profil → Claude → Clé API Claude** : coller une clé créée sur console.anthropic.com
+  (crédit payé à part de l'abonnement Claude). Modèle par défaut : `claude-haiku-5-5`.
+  La clé est **chiffrée sur le téléphone**, exclue des sauvegardes, envoyée seulement à
+  api.anthropic.com. **Jamais dans le code ni sur GitHub.**
+- Avec la clé, **Bilan** affiche la réponse de Claude dans Mizan, et **Ticket** envoie la photo
+  (réduite) à Claude, qui la lit : les dépenses reconnues s'ajoutent en un geste.
+- Sans clé, tout passe par l'app Claude comme en v0.7.
+- La connexion d'un compte ou abonnement Claude dans une app tierce n'est pas autorisée par
+  Anthropic : c'est pourquoi l'intégration directe passe par une clé API.
+
 Format d'échange (`util/MizanCsv.kt`) :
 
 ```

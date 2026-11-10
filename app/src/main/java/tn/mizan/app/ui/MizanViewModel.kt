@@ -3,12 +3,15 @@ package tn.mizan.app.ui
 import android.app.Application
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
+import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import tn.mizan.app.MizanApplication
+import tn.mizan.app.claude.ClaudeSettings
 import tn.mizan.app.data.Category
 import tn.mizan.app.data.Expense
 import tn.mizan.app.util.Dates
@@ -28,9 +31,46 @@ data class MonthState(
         expenses.filter { !it.isIncome && it.category == category }.sumOf { it.amountMillimes }
 }
 
+/** Réglages Claude affichés dans le Profil (la clé elle-même n'est jamais affichée). */
+data class ClaudeConfig(
+    val configured: Boolean,
+    val model: String,
+    val keyHint: String,
+    val storageAvailable: Boolean
+)
+
 class MizanViewModel(app: Application) : AndroidViewModel(app) {
     private val dao = (app as MizanApplication).database.dao()
     private val range = Dates.currentMonthRange()
+    private val claudeSettings = ClaudeSettings(app)
+
+    private val _claude = MutableStateFlow(readClaude())
+    val claude: StateFlow<ClaudeConfig> = _claude.asStateFlow()
+
+    /** Clé et modèle pour un appel direct à Claude (null si pas de clé). */
+    fun claudeCredentials(): Pair<String, String>? =
+        claudeSettings.apiKey?.let { it to claudeSettings.model }
+
+    fun saveClaude(key: String?, model: String) {
+        if (key != null) claudeSettings.apiKey = key
+        claudeSettings.model = model
+        _claude.value = readClaude()
+    }
+
+    fun clearClaudeKey() {
+        claudeSettings.apiKey = null
+        _claude.value = readClaude()
+    }
+
+    private fun readClaude(): ClaudeConfig {
+        val key = claudeSettings.apiKey
+        return ClaudeConfig(
+            configured = key != null,
+            model = claudeSettings.model,
+            keyHint = key?.let { "…" + it.takeLast(4) } ?: "",
+            storageAvailable = claudeSettings.isAvailable
+        )
+    }
 
     val state: StateFlow<MonthState> =
         combine(dao.expensesBetween(range.first, range.second), dao.budgets()) { expenses, budgets ->
