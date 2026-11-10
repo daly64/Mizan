@@ -8,7 +8,9 @@ class MizanApplication : Application() {
 
     override fun onCreate() {
         super.onCreate()
-        // La v0.3 pouvait enregistrer une clé API (fichier chiffré) : on l'efface définitivement.
+        // Les versions 0.3 et 0.8 pouvaient enregistrer une clé API : on l'efface définitivement.
         deleteSharedPreferences("mizan_secure")
+        deleteSharedPreferences("mizan_claude")
+        deleteSharedPreferences("mizan_prefs")
     }
 }

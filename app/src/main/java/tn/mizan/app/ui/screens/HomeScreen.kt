@@ -32,7 +32,6 @@ import androidx.compose.ui.unit.sp
 import tn.mizan.app.data.Category
 import tn.mizan.app.ui.MonthState
 import tn.mizan.app.ui.components.CategoryTile
-import tn.mizan.app.ui.components.ClaudeCard
 import tn.mizan.app.ui.components.EmptyHint
 import tn.mizan.app.ui.components.MizanCard
 import tn.mizan.app.ui.components.MizanLogo
@@ -51,13 +50,7 @@ import tn.mizan.app.util.Money
 import kotlin.math.roundToInt
 
 @Composable
-fun HomeScreen(
-    state: MonthState,
-    onSeeAll: () -> Unit,
-    claudeDirect: Boolean,
-    onClaudeReview: () -> Unit,
-    onClaudeTicket: () -> Unit
-) {
+fun HomeScreen(state: MonthState, onSeeAll: () -> Unit) {
     LazyColumn(
         Modifier.fillMaxSize(),
         contentPadding = PaddingValues(20.dp),
@@ -71,7 +64,6 @@ fun HomeScreen(
                 MiniCard("Solde disponible", state.balance, Slate, Modifier.weight(1f))
             }
         }
-        item { ClaudeCard(direct = claudeDirect, onReview = onClaudeReview, onTicket = onClaudeTicket) }
         item { SectionHeader("Catégories") }
         item {
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {

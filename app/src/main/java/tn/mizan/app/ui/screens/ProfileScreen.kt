@@ -17,14 +17,12 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.outlined.KeyboardArrowRight
-import androidx.compose.material.icons.outlined.AutoAwesome
 import androidx.compose.material.icons.outlined.CalendarMonth
 import androidx.compose.material.icons.outlined.CloudUpload
 import androidx.compose.material.icons.outlined.CreditCard
 import androidx.compose.material.icons.outlined.FileDownload
 import androidx.compose.material.icons.outlined.Info
 import androidx.compose.material.icons.outlined.LightMode
-import androidx.compose.material.icons.outlined.Memory
 import androidx.compose.material.icons.outlined.Notifications
 import androidx.compose.material.icons.outlined.Payments
 import androidx.compose.material.icons.outlined.Person
@@ -45,9 +43,7 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import tn.mizan.app.ui.ClaudeConfig
 import tn.mizan.app.ui.MonthState
-import tn.mizan.app.ui.components.ClaudeKeyDialog
 import tn.mizan.app.ui.components.IconCircle
 import tn.mizan.app.ui.components.MizanCard
 import tn.mizan.app.ui.components.MoneyText
@@ -57,15 +53,8 @@ import tn.mizan.app.ui.theme.Muted
 import tn.mizan.app.ui.theme.Slate
 
 @Composable
-fun ProfileScreen(
-    state: MonthState,
-    claude: ClaudeConfig,
-    onSaveClaude: (key: String?, model: String) -> Unit,
-    onClearClaudeKey: () -> Unit,
-    onExportCsv: () -> Unit
-) {
+fun ProfileScreen(state: MonthState) {
     var reminder by remember { mutableStateOf(true) }
-    var showKeyDialog by remember { mutableStateOf(false) }
 
     Column(
         Modifier
@@ -109,41 +98,15 @@ fun ProfileScreen(
             SettingRow(Icons.Outlined.LightMode, "Thème") { Value("Clair") }
         }
 
-        Group("Claude") {
-            SettingRow(Icons.Outlined.AutoAwesome, "Clé API Claude", onClick = { showKeyDialog = true }) {
-                Value(if (claude.configured) "Configurée ${claude.keyHint}" else "Non configurée")
-            }
-            Divider()
-            SettingRow(Icons.Outlined.Memory, "Modèle", onClick = { showKeyDialog = true }) { Value(claude.model) }
-        }
-        Text(
-            if (claude.configured) "Bilan et Ticket fonctionnent directement dans Mizan."
-            else "Sans clé, Bilan et Ticket passent par l’app Claude. Avec ta clé, tout se fait ici.",
-            fontSize = 12.sp,
-            color = Muted
-        )
-
         Group("Données") {
-            SettingRow(Icons.Outlined.FileDownload, "Exporter en CSV", onClick = onExportCsv) { Value("Tout") }
+            SettingRow(Icons.Outlined.FileDownload, "Exporter en CSV") { Value("Bientôt") }
             Divider()
             SettingRow(Icons.Outlined.CloudUpload, "Sauvegarde") { Value("Bientôt") }
             Divider()
-            SettingRow(Icons.Outlined.Info, "À propos de Mizan") { Value("v0.8") }
+            SettingRow(Icons.Outlined.Info, "À propos de Mizan") { Value("v0.9") }
         }
     }
 
-
-    if (showKeyDialog) {
-        ClaudeKeyDialog(
-            configured = claude.configured,
-            keyHint = claude.keyHint,
-            model = claude.model,
-            storageAvailable = claude.storageAvailable,
-            onSave = { key, model -> onSaveClaude(key, model); showKeyDialog = false },
-            onClear = { onClearClaudeKey(); showKeyDialog = false },
-            onDismiss = { showKeyDialog = false }
-        )
-    }
 }
 
 @Composable

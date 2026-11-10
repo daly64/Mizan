@@ -30,29 +30,6 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
-import android.content.ActivityNotFoundException
-import android.widget.Toast
-import androidx.activity.compose.rememberLauncherForActivityResult
-import androidx.activity.result.PickVisualMediaRequest
-import androidx.activity.result.contract.ActivityResultContracts
-import android.content.ClipData
-import android.content.ClipboardManager
-import android.content.Context
-import android.os.Build
-import androidx.compose.ui.platform.LocalWindowInfo
-import java.io.File
-import tn.mizan.app.data.Expense
-import tn.mizan.app.ui.components.ClaudeBusyDialog
-import tn.mizan.app.ui.components.ImportSheet
-import tn.mizan.app.ui.components.ReviewSheet
-import tn.mizan.app.claude.ClaudeApi
-import androidx.compose.runtime.rememberCoroutineScope
-import kotlinx.coroutines.Job
-import kotlinx.coroutines.launch
-import tn.mizan.app.ui.components.TicketSourceDialog
-import tn.mizan.app.util.MizanCsv
-import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -72,7 +49,6 @@ import androidx.navigation.compose.rememberNavController
 import tn.mizan.app.ui.screens.AddExpenseScreen
 import tn.mizan.app.ui.screens.AnimatedSplash
 import tn.mizan.app.ui.screens.BudgetsScreen
-import tn.mizan.app.claude.ClaudeBridge
 import tn.mizan.app.ui.screens.HomeScreen
 import tn.mizan.app.ui.screens.ProfileScreen
 import tn.mizan.app.ui.screens.TransactionsScreen
@@ -90,14 +66,9 @@ object Routes {
     const val PROFILE = "profile"
 }
 
-/**
- * @param sharedText texte reçu par partage (réponse de Claude, fichier CSV)
- * @param shareRequest augmente à chaque partage reçu : on propose alors l'import.
- */
 @Composable
-fun MizanApp(sharedText: String? = null, shareRequest: Int = 0, vm: MizanViewModel = viewModel()) {
-    var showSplash by rememberSaveable { mutableStateOf(shareRequest == 0) }
-    val context = LocalContext.current
+fun MizanApp(vm: MizanViewModel = viewModel()) {
+    var showSplash by rememberSaveable { mutableStateOf(true) }
     if (showSplash) {
         AnimatedSplash(onFinished = { showSplash = false })
         return
@@ -108,103 +79,6 @@ fun MizanApp(sharedText: String? = null, shareRequest: Int = 0, vm: MizanViewMod
     val backStack by nav.currentBackStackEntryAsState()
     val route = backStack?.destination?.route
     val showBar = route != Routes.ADD
-
-    // --- Échanges avec Claude ---
-    var pendingImport by remember { mutableStateOf<List<Expense>?>(null) }
-    var showTicketChoice by remember { mutableStateOf(false) }
-    var cameraFile by remember { mutableStateOf<File?>(null) }
-    val windowInfo = LocalWindowInfo.current
-    val clipboard = remember { context.getSystemService(ClipboardManager::class.java) }
-    val prefs = remember { context.getSharedPreferences("mizan_prefs", Context.MODE_PRIVATE) }
-
-    fun offerImport(text: String, fromShare: Boolean) {
-        val result = MizanCsv.parse(text)
-        if (result.expenses.isNotEmpty()) {
-            pendingImport = result.expenses
-        } else if (fromShare) {
-            Toast.makeText(context, "Aucune dépense reconnue dans ce texte.", Toast.LENGTH_SHORT).show()
-        }
-    }
-
-    // Réponse de Claude partagée vers Mizan
-    LaunchedEffect(shareRequest) {
-        if (shareRequest > 0) offerImport(sharedText.orEmpty(), fromShare = true)
-    }
-
-    // Réponse de Claude copiée : détectée au retour dans Mizan (une seule lecture par nouvelle copie)
-    LaunchedEffect(windowInfo.isWindowFocused) {
-        if (!windowInfo.isWindowFocused || pendingImport != null || clipboard == null) return@LaunchedEffect
-        val description = clipboard.primaryClipDescription ?: return@LaunchedEffect
-        val stamp = description.timestamp
-        if (stamp == prefs.getLong("last_clip", 0L) || !description.hasMimeType("text/*")) return@LaunchedEffect
-        prefs.edit().putLong("last_clip", stamp).apply()
-        val text = clipboard.primaryClip?.getItemAt(0)?.coerceToText(context)?.toString() ?: return@LaunchedEffect
-        if (MizanCsv.looksLikeMizan(text)) offerImport(text, fromShare = false)
-    }
-
-    // Claude directement dans Mizan (si une clé est enregistrée), sinon via l'app Claude
-    val claude by vm.claude.collectAsStateWithLifecycle()
-    val scope = rememberCoroutineScope()
-    var busyMessage by remember { mutableStateOf<String?>(null) }
-    var busyJob by remember { mutableStateOf<Job?>(null) }
-    var reviewText by remember { mutableStateOf<String?>(null) }
-
-    fun toast(message: String) = Toast.makeText(context, message, Toast.LENGTH_LONG).show()
-
-    fun runClaude(message: String, block: suspend () -> Unit) {
-        busyMessage = message
-        busyJob = scope.launch {
-            try {
-                block()
-            } finally {
-                busyMessage = null
-            }
-        }
-    }
-
-    fun claudeReview() {
-        val creds = vm.claudeCredentials()
-        if (creds == null) {
-            ClaudeBridge.shareText(context, ClaudeBridge.monthReport(state))
-            return
-        }
-        runClaude("Claude prépare ton bilan…") {
-            ClaudeApi.review(creds.first, creds.second, state).fold(
-                onSuccess = { reviewText = it },
-                onFailure = { toast(it.message ?: "Erreur de Claude.") }
-            )
-        }
-    }
-
-    fun handleTicket(file: File) {
-        val creds = vm.claudeCredentials()
-        if (creds == null) {
-            ClaudeBridge.shareTicket(context, file)
-            return
-        }
-        runClaude("Claude lit ton ticket…") {
-            ClaudeApi.readTicket(creds.first, creds.second, file).fold(
-                onSuccess = { answer ->
-                    val result = MizanCsv.parse(answer)
-                    if (result.expenses.isNotEmpty()) pendingImport = result.expenses
-                    else toast("Claude n’a pas trouvé de dépense sur cette photo. Essaie une photo plus nette.")
-                },
-                onFailure = { toast(it.message ?: "Erreur de Claude.") }
-            )
-        }
-    }
-
-    val takePicture = rememberLauncherForActivityResult(ActivityResultContracts.TakePicture()) { ok ->
-        val file = cameraFile
-        if (ok && file != null && file.length() > 0) handleTicket(file)
-    }
-    val pickImage = rememberLauncherForActivityResult(ActivityResultContracts.PickVisualMedia()) { uri ->
-        if (uri != null) {
-            val file = ClaudeBridge.copyToTicket(context, uri)
-            if (file != null) handleTicket(file)
-            else Toast.makeText(context, "Impossible de lire cette image.", Toast.LENGTH_SHORT).show()
-        }
-    }
 
     Scaffold(
         containerColor = Cream,
@@ -226,13 +100,7 @@ fun MizanApp(sharedText: String? = null, shareRequest: Int = 0, vm: MizanViewMod
     ) { padding ->
         NavHost(nav, startDestination = Routes.HOME, modifier = Modifier.padding(padding)) {
             composable(Routes.HOME) {
-                HomeScreen(
-                    state = state,
-                    onSeeAll = { nav.navigate(Routes.TRANSACTIONS) },
-                    claudeDirect = claude.configured,
-                    onClaudeReview = { claudeReview() },
-                    onClaudeTicket = { showTicketChoice = true }
-                )
+                HomeScreen(state, onSeeAll = { nav.navigate(Routes.TRANSACTIONS) })
             }
             composable(Routes.TRANSACTIONS) {
                 TransactionsScreen(state, onDelete = vm::delete)
@@ -247,63 +115,10 @@ fun MizanApp(sharedText: String? = null, shareRequest: Int = 0, vm: MizanViewMod
                 )
             }
             composable(Routes.BUDGETS) { BudgetsScreen(state) }
-            composable(Routes.PROFILE) {
-                ProfileScreen(
-                    state = state,
-                    claude = claude,
-                    onSaveClaude = vm::saveClaude,
-                    onClearClaudeKey = vm::clearClaudeKey,
-                    onExportCsv = { vm.withAllExpenses { ClaudeBridge.shareCsvFile(context, it) } }
-                )
-            }
+            composable(Routes.PROFILE) { ProfileScreen(state) }
         }
     }
 
-    if (showTicketChoice) {
-        TicketSourceDialog(
-            onCamera = {
-                showTicketChoice = false
-                val file = ClaudeBridge.newTicketFile(context)
-                cameraFile = file
-                try {
-                    takePicture.launch(ClaudeBridge.uriFor(context, file))
-                } catch (_: ActivityNotFoundException) {
-                    Toast.makeText(context, "Aucun appareil photo disponible.", Toast.LENGTH_SHORT).show()
-                }
-            },
-            onGallery = {
-                showTicketChoice = false
-                pickImage.launch(PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly))
-            },
-            onDismiss = { showTicketChoice = false }
-        )
-    }
-
-    busyMessage?.let { message ->
-        ClaudeBusyDialog(message, onCancel = { busyJob?.cancel() })
-    }
-
-    reviewText?.let { text ->
-        ReviewSheet(text, onDismiss = { reviewText = null })
-    }
-
-    pendingImport?.let { expenses ->
-        ImportSheet(
-            expenses = expenses,
-            onImport = {
-                pendingImport = null
-                clearClipboard(clipboard)
-                vm.importAll(expenses) { n ->
-                    Toast.makeText(
-                        context,
-                        "$n transaction${if (n > 1) "s" else ""} ajoutée${if (n > 1) "s" else ""}",
-                        Toast.LENGTH_SHORT
-                    ).show()
-                }
-            },
-            onDismiss = { pendingImport = null }
-        )
-    }
 }
 
 private data class Tab(val route: String, val label: String, val icon: ImageVector)
@@ -372,11 +187,4 @@ private fun TabItem(tab: Tab, selected: Boolean, onSelect: (String) -> Unit) {
             maxLines = 1
         )
     }
-}
-
-/** Vide le presse-papiers après un import, pour ne pas proposer deux fois la même réponse. */
-private fun clearClipboard(clipboard: ClipboardManager?) {
-    if (clipboard == null) return
-    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) clipboard.clearPrimaryClip()
-    else clipboard.setPrimaryClip(ClipData.newPlainText("", ""))
 }

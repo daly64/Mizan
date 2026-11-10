@@ -17,38 +17,6 @@ Kotlin · Jetpack Compose · Room · minSdk 26 (Android 8).
   (dépassement en rouge). Budgets par défaut : 2 500 dinars au total.
 - **Profil** : réglages (affichage seulement pour l'instant).
 
-### Avec Claude (v0.7) — tout depuis l'accueil
-
-Mizan reste 100 % locale (aucun accès internet, aucune clé) : les échanges passent
-par le **partage Android** avec l'application Claude du téléphone.
-Une seule carte « Avec Claude » sur l'accueil :
-
-- **Bilan** : envoie le mois (consigne, totaux, budgets, transactions) à Claude.
-- **Ticket** : photo ou galerie → la photo et la consigne partent ensemble vers Claude,
-  qui répond en lignes au format Mizan.
-- **Retour automatique** : partager la réponse de Claude vers Mizan, **ou simplement la copier**
-  et revenir dans Mizan : la réponse est détectée et Mizan propose « Ajouter » en un geste.
-- **Exporter en CSV** reste dans Profil → Données.
-
-### Claude directement dans Mizan (v0.8) — facultatif
-
-- **Profil → Claude → Clé API Claude** : coller une clé créée sur console.anthropic.com
-  (crédit payé à part de l'abonnement Claude). Modèle par défaut : `claude-haiku-5-5`.
-  La clé est **chiffrée sur le téléphone**, exclue des sauvegardes, envoyée seulement à
-  api.anthropic.com. **Jamais dans le code ni sur GitHub.**
-- Avec la clé, **Bilan** affiche la réponse de Claude dans Mizan, et **Ticket** envoie la photo
-  (réduite) à Claude, qui la lit : les dépenses reconnues s'ajoutent en un geste.
-- Sans clé, tout passe par l'app Claude comme en v0.7.
-- La connexion d'un compte ou abonnement Claude dans une app tierce n'est pas autorisée par
-  Anthropic : c'est pourquoi l'intégration directe passe par une clé API.
-
-Format d'échange (`util/MizanCsv.kt`) :
-
-```
-date;type;montant;categorie;paiement;note
-2026-11-10;depense;12.500;Transport;Especes;Taxi
-```
-
 ## Ouvrir et lancer
 
 1. Ouvrir le dossier `Mizan` dans **Android Studio** (Ladybug ou plus récent).
@@ -79,5 +47,5 @@ app/src/main/java/tn/mizan/app/
 ## Prochaines étapes
 
 - Polices Poppins / Inter / Cairo
-- Modifier les budgets, sauvegarde
+- Modifier les budgets, export CSV, sauvegarde
 - Historique des mois précédents
