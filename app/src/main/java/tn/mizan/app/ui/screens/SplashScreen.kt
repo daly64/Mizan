@@ -2,6 +2,7 @@ package tn.mizan.app.ui.screens
 
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.FastOutSlowInEasing
+import androidx.compose.animation.core.LinearOutSlowInEasing
 import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.spring
 import androidx.compose.animation.core.tween
@@ -21,7 +22,13 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.drawWithContent
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.graphics.drawscope.clipRect
 import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.text.font.Font
+import androidx.compose.ui.text.font.FontFamily
+import tn.mizan.app.R
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -36,7 +43,8 @@ import tn.mizan.app.ui.theme.Gold
 /**
  * Splash animé, comme dans le prototype Figma :
  * 1. la balance apparaît, grandit et se redresse avec un rebond, le halo s'élargit ;
- * 2. elle remonte, puis le nom et le slogan apparaissent en fondu ;
+ * 2. elle remonte, puis ميزان s'écrit en calligraphie Ruqaa, de droite à gauche ;
+ *    « Mizan » et le slogan apparaissent ensuite en fondu ;
  * 3. après une courte pause, on passe à l'accueil.
  */
 @Composable
@@ -47,6 +55,7 @@ fun AnimatedSplash(onFinished: () -> Unit) {
     val halo = remember { Animatable(0.3f) }
     val lift = remember { Animatable(0f) }
     val textAlpha = remember { Animatable(0f) }
+    val writing = remember { Animatable(0f) }
 
     LaunchedEffect(Unit) {
         launch { logoAlpha.animateTo(1f, tween(400)) }
@@ -55,8 +64,10 @@ fun AnimatedSplash(onFinished: () -> Unit) {
         logoScale.animateTo(1f, spring(Spring.DampingRatioMediumBouncy, Spring.StiffnessLow))
         launch { lift.animateTo(1f, tween(500, easing = FastOutSlowInEasing)) }
         delay(150)
-        textAlpha.animateTo(1f, tween(500))
-        delay(1_000)
+        // ميزان s'écrit de droite à gauche, comme à la plume
+        writing.animateTo(1f, tween(1_400, easing = LinearOutSlowInEasing))
+        textAlpha.animateTo(1f, tween(450))
+        delay(900)
         onFinished()
     }
 
@@ -96,17 +107,18 @@ fun AnimatedSplash(onFinished: () -> Unit) {
                     }
                 )
             }
-            Spacer(Modifier.height(8.dp))
-            Column(
-                horizontalAlignment = Alignment.CenterHorizontally,
+            Spacer(Modifier.height(4.dp))
+            CalligraphyName(progress = writing.value)
+            Text(
+                "Mizan",
+                color = Gold,
+                fontSize = 24.sp,
+                fontWeight = FontWeight.SemiBold,
                 modifier = Modifier.graphicsLayer {
                     alpha = textAlpha.value
                     translationY = (1f - textAlpha.value) * textShiftPx
                 }
-            ) {
-                Text("ميـزان", color = Cream, fontSize = 56.sp, fontWeight = FontWeight.Bold)
-                Text("Mizan", color = Gold, fontSize = 24.sp, fontWeight = FontWeight.SemiBold)
-            }
+            )
         }
         Text(
             "Équilibrer ses dépenses, simplement.",
@@ -119,4 +131,34 @@ fun AnimatedSplash(onFinished: () -> Unit) {
                 .graphicsLayer { alpha = textAlpha.value }
         )
     }
+}
+
+/** Police calligraphique Ruqaa (Aref Ruqaa, licence OFL), embarquée dans l'app : aucun téléchargement. */
+private val Ruqaa = FontFamily(Font(R.font.aref_ruqaa_bold, FontWeight.Bold))
+
+/**
+ * Le nom en arabe, révélé de droite à gauche au rythme de [progress] (0 → 1),
+ * avec un point doré qui suit la « plume ».
+ */
+@Composable
+private fun CalligraphyName(progress: Float) {
+    Text(
+        "ميزان",
+        color = Cream,
+        fontSize = 72.sp,
+        fontFamily = Ruqaa,
+        fontWeight = FontWeight.Bold,
+        modifier = Modifier
+            .padding(horizontal = 16.dp)
+            .drawWithContent {
+                val shown = size.width * progress
+                val edge = size.width - shown
+                clipRect(left = edge, top = 0f, right = size.width, bottom = size.height) {
+                    this@drawWithContent.drawContent()
+                }
+                if (progress in 0.01f..0.99f) {
+                    drawCircle(Gold, radius = 5.dp.toPx(), center = Offset(edge, size.height * 0.55f))
+                }
+            }
+    )
 }

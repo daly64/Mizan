@@ -5,8 +5,9 @@ Kotlin · Jetpack Compose · Room · minSdk 26 (Android 8).
 
 ## Ce que contient cette ébauche (v0.1)
 
-- **Splash** : splash système (logo sur fond émeraude), puis splash animé
-  (la balance apparaît avec un rebond, puis ميـزان / Mizan et le slogan).
+- **Splash** : splash système (logo sur fond émeraude), puis splash animé :
+  la balance apparaît avec un rebond, puis ميزان s'écrit en calligraphie Ruqaa
+  (police Aref Ruqaa embarquée, licence OFL dans `licenses/`), puis Mizan et le slogan.
 - **Accueil** : dépenses du mois et jauge du budget, revenus, solde,
   catégories, dernières transactions.
 - **Transactions** : recherche, filtres par catégorie, liste groupée par jour.
