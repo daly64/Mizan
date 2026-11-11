@@ -63,6 +63,9 @@ class AgentViewModel(app: Application) : AndroidViewModel(app) {
     private val engineExecutor = Executors.newSingleThreadExecutor()
     private val engineThread = engineExecutor.asCoroutineDispatcher()
 
+    private val tools = MizanTools(dao) { action -> addItem(Who.ACTION, action) }
+    private val quick = QuickCommands(tools)
+
     private var engine: Engine? = null
     private var conversation: Conversation? = null
     private var sendJob: Job? = null
@@ -161,8 +164,12 @@ class AgentViewModel(app: Application) : AndroidViewModel(app) {
     private fun newConversation(e: Engine): Conversation = e.createConversation(
         ConversationConfig(
             systemInstruction = Contents.of(systemPrompt()),
-            tools = listOf(tool(MizanTools(dao) { action -> addItem(Who.ACTION, action) })),
-            samplerConfig = SamplerConfig(topK = 40, topP = 0.95, temperature = 0.3)
+            tools = listOf(tool(tools)),
+            samplerConfig = SamplerConfig(topK = 40, topP = 0.95, temperature = 0.3),
+            // Les consignes et la liste des outils sont lues dès le chargement, pas au premier message.
+            prefillPrefaceOnInit = true,
+            // Réponses courtes : sur un téléphone d'entrée de gamme, chaque mot compte.
+            maxOutputToken = 400
         )
     )
 
@@ -183,9 +190,26 @@ class AgentViewModel(app: Application) : AndroidViewModel(app) {
 
     fun send(text: String) {
         val message = text.trim()
-        if (message.isEmpty() || _state.value.busy || _state.value.model != ModelState.Ready) return
+        if (message.isEmpty() || _state.value.busy) return
         addItem(Who.USER, message)
         _state.update { it.copy(busy = true) }
+
+        // Mode rapide : réponse immédiate sans le modèle pour les demandes simples.
+        viewModelScope.launch {
+            val direct = withContext(kotlinx.coroutines.Dispatchers.IO) { runCatching { quick.handle(message) }.getOrNull() }
+            if (direct != null) {
+                if (direct.isNotEmpty()) addItem(Who.AGENT, direct)
+                _state.update { it.copy(busy = false) }
+            } else if (_state.value.model != ModelState.Ready) {
+                addItem(Who.AGENT, "Je n'ai compris que les demandes simples sans le modèle (ex. « 20 dinars taxi », « note : … », « bilan », « 12*3 »). Pour le reste, il faut que le modèle soit chargé.")
+                _state.update { it.copy(busy = false) }
+            } else {
+                askModel(message)
+            }
+        }
+    }
+
+    private fun askModel(message: String) {
         sendJob = viewModelScope.launch {
             var replyId: Long? = null
             val reply = StringBuilder()

@@ -13,8 +13,8 @@ android {
         applicationId = "tn.mizan.app"
         minSdk = 26
         targetSdk = 35
-        versionCode = 16
-        versionName = "0.11.1"
+        versionCode = 17
+        versionName = "0.11.2"
 
         // Le moteur IA est en code natif : on ne garde que l'architecture des téléphones récents (Redmi 14C compris)
         // pour que l'APK reste léger.

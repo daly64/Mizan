@@ -116,6 +116,23 @@ class MizanTools(
         return runBlocking { buildBilan(month) }
     }
 
+    // --- Pour le mode rapide (QuickCommands) ---
+
+    /** Catégorie citée dans un texte déjà normalisé, ou null. */
+    fun categoryIn(text: String): Category? = matchCategory("", text)
+
+    fun totalCategorie(category: Category, month: YearMonth?): String = runBlocking {
+        val m = month ?: YearMonth.now()
+        val list = load(m).filter { !it.isIncome && it.category == category }
+        val name = m.month.getDisplayName(TextStyle.FULL, Locale.FRENCH) + " " + m.year
+        val budget = dao.allBudgets().firstOrNull { it.category == category }?.limitMillimes ?: 0L
+        val total = list.sumOf { it.amountMillimes }
+        buildString {
+            append("${category.label} en $name : ${Money.format(total)} DT sur ${list.size} dépense${if (list.size > 1) "s" else ""}.")
+            if (budget > 0) append(" Budget : ${Money.format(budget)} DT (${percent(total, budget)}).")
+        }
+    }
+
     // --- Calculs du bilan ---
 
     private suspend fun buildBilan(month: YearMonth): String {

@@ -42,6 +42,10 @@ Kotlin · Jetpack Compose · Room · minSdk 26 (Android 8).
 - Menu ⋮ : nouvelle discussion, accélération GPU (essai, retour au processeur si elle échoue),
   changer / supprimer le modèle.
 - Le son du splash a été retiré (v0.11.1).
+- **Mode rapide** (v0.11.2, `agent/QuickCommands.kt`) : « 20 dinars taxi », « note : … », « 12*3.5 »,
+  « bilan d'octobre », « combien en transport ? » sont traités par des règles Kotlin, sans le modèle
+  (réponse immédiate). Le modèle ne sert qu'aux questions ouvertes et aux conseils ; ses consignes
+  sont préchargées et ses réponses limitées à 400 jetons.
 
 ## Ouvrir et lancer
 
