@@ -42,7 +42,10 @@ android {
             if (fixedSigning) signingConfig = signingConfigs.getByName("almizan")
         }
         release {
-            if (fixedSigning) signingConfig = signingConfigs.getByName("almizan")
+            // Version publiée : non débogable (Play Protect se méfie des APK de test).
+            // Sans la clé fixe (secrets absents), on signe avec la clé de test pour que l'APK reste installable.
+            signingConfig = if (fixedSigning) signingConfigs.getByName("almizan") else signingConfigs.getByName("debug")
+            isDebuggable = false
             isMinifyEnabled = false
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),

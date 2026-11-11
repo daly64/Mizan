@@ -3,22 +3,17 @@ package tn.mizan.app.data
 import android.content.Context
 import android.content.Intent
 import android.net.Uri
-import android.os.Build
-import android.provider.Settings
-import androidx.core.content.FileProvider
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import org.json.JSONArray
 import tn.mizan.app.BuildConfig
-import java.io.File
 import java.net.HttpURLConnection
 import java.net.URL
 
 /**
  * Mises à jour d'AL MIZAN, sans Play Store :
  * - l'app regarde les versions publiées sur GitHub (Releases) par la compilation automatique ;
- * - si une version plus récente existe, elle télécharge l'APK et lance l'installation Android ;
- * - on peut aussi installer un APK reçu autrement (fichier du téléphone).
+ * - si une version plus récente existe, le navigateur télécharge l'APK et Android propose de l'installer.
  *
  * C'est le seul accès internet de l'app : aucune donnée n'est envoyée, on lit seulement la liste des versions.
  * Les dépenses ne sont pas touchées par une mise à jour (même signature, même identifiant d'app).
@@ -103,76 +98,14 @@ object Updates {
         }.getOrElse { Check.Failed("Pas de connexion internet") }
     }
 
-    /** Télécharge l'APK dans le cache de l'app, en signalant la progression (0..1). */
-    suspend fun download(context: Context, release: Release, onProgress: (Float) -> Unit): File? = withContext(Dispatchers.IO) {
-        runCatching {
-            val dir = File(context.cacheDir, "maj").apply { mkdirs(); listFiles()?.forEach { it.delete() } }
-            val file = File(dir, "al-mizan-${release.versionName}.apk")
-            var url = URL(release.apkUrl)
-            var conn = url.openConnection() as HttpURLConnection
-            // GitHub redirige vers son stockage : on suit jusqu'à 5 redirections.
-            var hops = 0
-            while (true) {
-                conn.instanceFollowRedirects = false
-                conn.connectTimeout = 10_000
-                conn.readTimeout = 20_000
-                conn.setRequestProperty("User-Agent", "AL-MIZAN-Android")
-                val code = conn.responseCode
-                if (code in 300..399 && hops < 5) {
-                    url = URL(url, conn.getHeaderField("Location"))
-                    conn.disconnect()
-                    conn = url.openConnection() as HttpURLConnection
-                    hops++
-                } else break
-            }
-            if (conn.responseCode != 200) return@runCatching null
-            val total = conn.contentLengthLong.takeIf { it > 0 } ?: release.sizeBytes
-            conn.inputStream.use { input ->
-                file.outputStream().use { out ->
-                    val buffer = ByteArray(64 * 1024)
-                    var done = 0L
-                    while (true) {
-                        val n = input.read(buffer)
-                        if (n < 0) break
-                        out.write(buffer, 0, n)
-                        done += n
-                        if (total > 0) onProgress((done.toFloat() / total).coerceIn(0f, 1f))
-                    }
-                }
-            }
-            conn.disconnect()
-            file
-        }.getOrNull()
-    }
-
-    /** Copie un APK choisi dans le téléphone vers le cache, pour l'installer. */
-    suspend fun copyLocalApk(context: Context, uri: Uri): File? = withContext(Dispatchers.IO) {
-        runCatching {
-            val dir = File(context.cacheDir, "maj").apply { mkdirs() }
-            val file = File(dir, "al-mizan-fichier.apk")
-            context.contentResolver.openInputStream(uri)!!.use { input -> file.outputStream().use { input.copyTo(it) } }
-            file
-        }.getOrNull()
-    }
-
-    /** Android 8+ : l'utilisateur doit autoriser AL MIZAN à installer des applications (une seule fois). */
-    fun canInstall(context: Context): Boolean =
-        Build.VERSION.SDK_INT < Build.VERSION_CODES.O || context.packageManager.canRequestPackageInstalls()
-
-    fun openInstallPermission(context: Context) {
+    /**
+     * Ouvre le lien de l'APK dans le navigateur : il le télécharge, puis on touche le fichier pour l'installer.
+     * L'app ne demande donc pas la permission d'installer des applications (permission sensible
+     * qui déclenche les alertes de Play Protect).
+     */
+    fun openDownload(context: Context, release: Release) {
         context.startActivity(
-            Intent(Settings.ACTION_MANAGE_UNKNOWN_APP_SOURCES, Uri.parse("package:${context.packageName}"))
-                .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-        )
-    }
-
-    /** Ouvre l'installateur Android sur l'APK téléchargé. */
-    fun install(context: Context, apk: File) {
-        val uri = FileProvider.getUriForFile(context, "${context.packageName}.fichiers", apk)
-        context.startActivity(
-            Intent(Intent.ACTION_VIEW)
-                .setDataAndType(uri, "application/vnd.android.package-archive")
-                .addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION or Intent.FLAG_ACTIVITY_NEW_TASK)
+            Intent(Intent.ACTION_VIEW, Uri.parse(release.apkUrl)).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
         )
     }
 }

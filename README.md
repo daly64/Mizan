@@ -79,8 +79,8 @@ app/src/main/java/tn/mizan/app/
 - **Plein écran automatique** : barres d'état et de navigation cachées ; un glissement depuis le bord
   les affiche un instant.
 - **Mises à jour** : au démarrage (au plus toutes les 12 h) et dans Réglages → « Rechercher une mise à jour »,
-  l'app lit les versions publiées sur GitHub Releases, télécharge l'APK et ouvre l'installateur Android.
-  Réglages → « Installer un APK du téléphone » pour un APK reçu autrement.
+  l'app lit les versions publiées sur GitHub Releases et propose « Télécharger la mise à jour » :
+  le navigateur télécharge l'APK, on le touche pour l'installer (pas de permission d'installation dans l'app).
   C'est le seul usage d'internet de l'app (permission INTERNET), aucune donnée n'est envoyée.
   Le dépôt des versions doit être lisible publiquement pour que la vérification fonctionne (sinon l'app l'indique).
 - **Signature fixe** : la clé n'est pas dans le dépôt, la compilation la reçoit par les secrets GitHub
@@ -98,3 +98,9 @@ app/src/main/java/tn/mizan/app/
 - Catégorie : règles par magasin (STEG → Factures, Agil → Transport, Carrefour → Courses, Café → Loisirs…).
   Quand on corrige la catégorie d'un magasin scanné, l'app s'en souvient pour les tickets suivants.
 - Limite : ML Kit ne lit pas l'arabe ; sur un ticket en arabe, seuls les chiffres sont reconnus.
+
+### Play Protect (v0.13)
+
+- APK publié en **release** (non débogable), signé avec une clé fixe (secrets GitHub), `targetSdk` 35.
+- Aucune permission sensible : seulement INTERNET (liste des versions). Pas de `REQUEST_INSTALL_PACKAGES`,
+  pas d'accès aux SMS, contacts, fichiers ou appareil photo (la photo de ticket passe par l'appareil photo du téléphone).

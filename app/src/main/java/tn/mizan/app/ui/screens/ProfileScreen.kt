@@ -7,10 +7,7 @@ import androidx.compose.material.icons.outlined.Backup
 import androidx.compose.material.icons.outlined.DarkMode
 import androidx.compose.material.icons.outlined.Folder
 import androidx.compose.material.icons.outlined.Restore
-import androidx.compose.material.icons.outlined.InstallMobile
 import androidx.compose.material.icons.outlined.SystemUpdate
-import androidx.compose.runtime.rememberCoroutineScope
-import kotlinx.coroutines.launch
 import tn.mizan.app.data.Updates
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.RadioButton
@@ -91,20 +88,6 @@ fun ProfileScreen(
                 .onFailure { toast("Impossible d’utiliser ce dossier") }
         }
     }
-    val scope = rememberCoroutineScope()
-    val pickApk = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
-        if (uri != null) scope.launch {
-            val file = Updates.copyLocalApk(context, uri)
-            when {
-                file == null -> toast("Impossible de lire ce fichier")
-                !Updates.canInstall(context) -> {
-                    toast("Autorise AL MIZAN à installer des applications, puis recommence")
-                    Updates.openInstallPermission(context)
-                }
-                else -> Updates.install(context, file)
-            }
-        }
-    }
     val pickBackup = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
         if (uri != null) {
             val content = Backup.read(context, uri)
@@ -144,10 +127,6 @@ fun ProfileScreen(
             SettingRow(Icons.Outlined.SystemUpdate, "Rechercher une mise à jour", onClick = onCheckUpdates) {
                 Value("v${Updates.currentVersionName}")
             }
-            Divider()
-            SettingRow(Icons.Outlined.InstallMobile, "Installer un APK du téléphone", onClick = {
-                pickApk.launch(arrayOf("application/vnd.android.package-archive", "application/octet-stream"))
-            }) { }
         }
         Text(
             "AL MIZAN se sauvegarde tout seul chaque fois que tu quittes l’app. " +

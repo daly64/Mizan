@@ -32,13 +32,13 @@ jobs:
             echo "::warning::Secret MIZAN_KEYSTORE_B64 absent : APK signé avec une clé de test temporaire"
           fi
 
-      - name: Compiler l'APK de test
+      - name: Compiler l'APK (version release)
         env:
           MIZAN_KEYSTORE_PASSWORD: ${{ secrets.MIZAN_KEYSTORE_PASSWORD }}
         run: |
           chmod +x gradlew
-          ./gradlew assembleDebug
-          cp app/build/outputs/apk/debug/app-debug.apk al-mizan.apk
+          ./gradlew assembleRelease
+          cp app/build/outputs/apk/release/app-release.apk al-mizan.apk
 
       - uses: actions/upload-artifact@v4
         with:

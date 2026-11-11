@@ -18,14 +18,12 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
-import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
@@ -40,12 +38,9 @@ import androidx.compose.ui.unit.sp
 import kotlinx.coroutines.launch
 import tn.mizan.app.data.Updates
 import tn.mizan.app.ui.theme.CardWhite
-import tn.mizan.app.ui.theme.Danger
 import tn.mizan.app.ui.theme.Emerald
-import tn.mizan.app.ui.theme.Line
 import tn.mizan.app.ui.theme.Muted
 import tn.mizan.app.ui.theme.Slate
-import java.io.File
 
 /** Panneau « Mise à jour disponible » : notes, téléchargement avec progression, installation. */
 @OptIn(ExperimentalMaterial3Api::class)
@@ -54,19 +49,6 @@ fun UpdateSheet(release: Updates.Release, onDismiss: () -> Unit) {
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
     val sheet = rememberModalBottomSheetState(skipPartiallyExpanded = true)
-    var progress by remember { mutableFloatStateOf(0f) }
-    var downloading by remember { mutableStateOf(false) }
-    var apk by remember { mutableStateOf<File?>(null) }
-    var error by remember { mutableStateOf<String?>(null) }
-
-    fun installOrAsk(file: File) {
-        if (Updates.canInstall(context)) Updates.install(context, file)
-        else {
-            error = "Autorise AL MIZAN à installer des applications, puis touche « Installer »."
-            Updates.openInstallPermission(context)
-        }
-    }
-
     ModalBottomSheet(onDismissRequest = onDismiss, sheetState = sheet, containerColor = CardWhite) {
         Column(
             Modifier
@@ -92,46 +74,19 @@ fun UpdateSheet(release: Updates.Release, onDismiss: () -> Unit) {
             if (release.notes.isNotBlank()) {
                 Text(release.notes.take(600), fontSize = 14.sp, lineHeight = 20.sp, color = Slate)
             }
-            if (downloading || apk != null) {
-                Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
-                    Row {
-                        Text(if (apk != null) "Téléchargée" else "Téléchargement…", fontSize = 12.sp, color = Muted, modifier = Modifier.weight(1f))
-                        Text("${(progress * 100).toInt()} %", fontSize = 12.sp, color = Muted)
-                    }
-                    LinearProgressIndicator(
-                        progress = { progress },
-                        color = Emerald,
-                        trackColor = Line,
-                        modifier = Modifier.fillMaxWidth().height(8.dp)
-                    )
-                }
-            }
-            error?.let { Text(it, fontSize = 13.sp, color = Danger) }
             Text(
-                "Tes dépenses et réglages sont conservés. Android te demandera de confirmer l’installation.",
+                "Le navigateur télécharge la nouvelle version : touche ensuite le fichier pour l’installer. Tes dépenses et réglages sont conservés.",
                 fontSize = 12.sp,
                 lineHeight = 18.sp,
                 color = Muted
             )
             Button(
-                onClick = {
-                    error = null
-                    val ready = apk
-                    if (ready != null) installOrAsk(ready)
-                    else if (!downloading) scope.launch {
-                        downloading = true
-                        val file = Updates.download(context, release) { progress = it }
-                        downloading = false
-                        if (file == null) error = "Le téléchargement a échoué. Vérifie ta connexion et réessaie."
-                        else { progress = 1f; apk = file; installOrAsk(file) }
-                    }
-                },
-                enabled = !downloading,
+                onClick = { Updates.openDownload(context, release); onDismiss() },
                 colors = ButtonDefaults.buttonColors(containerColor = Emerald, contentColor = Color.White),
                 shape = RoundedCornerShape(50),
                 modifier = Modifier.fillMaxWidth().height(52.dp)
             ) {
-                Text(if (apk != null) "Installer" else if (downloading) "Téléchargement…" else "Télécharger et installer", fontSize = 16.sp, fontWeight = FontWeight.SemiBold)
+                Text("Télécharger la mise à jour", fontSize = 16.sp, fontWeight = FontWeight.SemiBold)
             }
             TextButton(
                 onClick = {
