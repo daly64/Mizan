@@ -33,22 +33,11 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.outlined.KeyboardArrowRight
-import androidx.compose.material.icons.outlined.CalendarMonth
 import androidx.compose.material.icons.outlined.CloudUpload
-import androidx.compose.material.icons.outlined.CreditCard
-import androidx.compose.material.icons.outlined.FileDownload
-import androidx.compose.material.icons.outlined.Info
 import androidx.compose.material.icons.outlined.LightMode
-import androidx.compose.material.icons.outlined.Notifications
-import androidx.compose.material.icons.automirrored.outlined.VolumeUp
 import androidx.compose.ui.platform.LocalContext
-import tn.mizan.app.util.SplashSounds
-import androidx.compose.material.icons.outlined.Payments
-import androidx.compose.material.icons.outlined.Person
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
-import androidx.compose.material3.Switch
-import androidx.compose.material3.SwitchDefaults
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -77,9 +66,7 @@ fun ProfileScreen(
     onRestore: (Backup.Content, () -> Unit) -> Unit,
     onBackupNow: ((Boolean) -> Unit) -> Unit
 ) {
-    var reminder by remember { mutableStateOf(true) }
     val context = LocalContext.current
-    var startSound by remember { mutableStateOf(SplashSounds.isEnabled(context)) }
     var showTheme by remember { mutableStateOf(false) }
     var lastSaved by remember { mutableLongStateOf(Backup.lastSaved(context)) }
     var folderName by remember { mutableStateOf(Backup.folderName(context)) }
@@ -112,58 +99,16 @@ fun ProfileScreen(
             .padding(20.dp),
         verticalArrangement = Arrangement.spacedBy(14.dp)
     ) {
-        Text("Profil", fontSize = 22.sp, fontWeight = FontWeight.SemiBold, color = Slate)
+        Text("Réglages", fontSize = 22.sp, fontWeight = FontWeight.SemiBold, color = Slate)
 
-        MizanCard(Modifier.fillMaxWidth()) {
-            Row(Modifier.padding(16.dp), verticalAlignment = Alignment.CenterVertically) {
-                Box(Modifier.size(52.dp).background(Emerald, CircleShape), contentAlignment = Alignment.Center) {
-                    Icon(Icons.Outlined.Person, contentDescription = null, tint = Color.White, modifier = Modifier.size(26.dp))
-                }
-                Spacer(Modifier.width(14.dp))
-                Column(Modifier.weight(1f)) {
-                    Text("Mon profil", fontSize = 16.sp, fontWeight = FontWeight.SemiBold, color = Slate)
-                    Text("Données sur ce téléphone", fontSize = 12.sp, color = Muted)
-                }
-            }
-        }
-
-        Group("Préférences") {
-            SettingRow(Icons.Outlined.Payments, "Devise") { Value("Dinar tunisien") }
-            Divider()
-            SettingRow(Icons.Outlined.CreditCard, "Budget mensuel") {
-                MoneyText(state.budgetTotal, 13.sp, Muted)
-            }
-            Divider()
-            SettingRow(Icons.Outlined.CalendarMonth, "Début du mois") { Value("Le 1er") }
-            Divider()
-            SettingRow(Icons.AutoMirrored.Outlined.VolumeUp, "Son au démarrage", chevron = false) {
-                Switch(
-                    checked = startSound,
-                    onCheckedChange = {
-                        startSound = it
-                        SplashSounds.setEnabled(context, it)
-                    },
-                    colors = SwitchDefaults.colors(checkedTrackColor = Emerald)
-                )
-            }
-            Divider()
-            SettingRow(Icons.Outlined.Notifications, "Rappel quotidien", chevron = false) {
-                Switch(
-                    checked = reminder,
-                    onCheckedChange = { reminder = it },
-                    colors = SwitchDefaults.colors(checkedTrackColor = Emerald)
-                )
-            }
-            Divider()
+        Group {
             SettingRow(Icons.Outlined.DarkMode, "Thème", onClick = { showTheme = true }) {
                 Value(ThemeSettings.mode.label)
             }
         }
 
-        Group("Données") {
-            SettingRow(Icons.Outlined.FileDownload, "Exporter en CSV") { Value("Bientôt") }
-            Divider()
-            SettingRow(Icons.Outlined.Backup, "Sauvegarde automatique", onClick = { saveNow() }) {
+        Group {
+            SettingRow(Icons.Outlined.Backup, "Sauvegarder maintenant", onClick = { saveNow() }) {
                 Value(lastSavedLabel(lastSaved))
             }
             Divider()
@@ -174,8 +119,6 @@ fun ProfileScreen(
             SettingRow(Icons.Outlined.Restore, "Restaurer une sauvegarde", onClick = {
                 pickBackup.launch(arrayOf("application/json", "application/octet-stream", "text/plain"))
             }) { }
-            Divider()
-            SettingRow(Icons.Outlined.Info, "À propos de Mizan") { Value("v0.10") }
         }
         Text(
             "Mizan se sauvegarde tout seul chaque fois que tu quittes l’app. " +
@@ -183,6 +126,7 @@ fun ProfileScreen(
             fontSize = 12.sp,
             color = Muted
         )
+        Text("Mizan v0.12", fontSize = 12.sp, color = Muted)
     }
 
     if (showTheme) {
@@ -241,8 +185,7 @@ fun ProfileScreen(
 }
 
 @Composable
-private fun Group(title: String, content: @Composable () -> Unit) {
-    Text(title, fontSize = 12.sp, fontWeight = FontWeight.SemiBold, color = Muted)
+private fun Group(content: @Composable () -> Unit) {
     MizanCard(Modifier.fillMaxWidth()) {
         Column(Modifier.padding(horizontal = 16.dp, vertical = 2.dp)) { content() }
     }

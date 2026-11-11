@@ -8,9 +8,6 @@ Kotlin · Jetpack Compose · Room · minSdk 26 (Android 8).
 - **Splash** : splash système (logo sur fond émeraude), puis splash animé :
   la balance apparaît avec un rebond, puis ميزان s'écrit en calligraphie Ruqaa
   (police Aref Ruqaa embarquée, licence OFL dans `licenses/`), puis Mizan et le slogan.
-  Son embarqué (`res/raw/splash_calame.ogg`, généré par `tools/generer_son_calame.py`) :
-  le bruit d'un calame qui écrit ميزان, synchronisé avec le nom ; muet en silencieux/vibreur,
-  désactivable dans Profil → « Son au démarrage ».
 - **Accueil** : dépenses du mois et jauge du budget, revenus, solde,
   catégories, dernières transactions.
 - **Transactions** : recherche, filtres par catégorie, liste groupée par jour.
@@ -30,6 +27,16 @@ Kotlin · Jetpack Compose · Room · minSdk 26 (Android 8).
   et dans un dossier du téléphone si on en choisit un (Profil → Dossier de sauvegarde).
   Jamais écrasée par une base vide. **Restaurer une sauvegarde** remplace les données
   par celles d'un fichier choisi. Tout reste local (`data/Backup.kt`).
+
+### Interface simplifiée (v0.12)
+
+- Barre du bas réduite à **Accueil · + · Transactions**.
+- Accueil : dépenses du mois et budget, revenus et solde, **budgets par catégorie** (l'ancien onglet
+  Budgets), dernières transactions. ⚙ en haut à droite ouvre les Réglages.
+- **Réglages** : thème, sauvegarde, dossier de sauvegarde, restauration. Les lignes qui ne faisaient
+  rien (devise, rappel, export CSV « bientôt », etc.) sont retirées.
+- Nouvelle dépense : montant, catégorie, date, note (le choix espèces / carte est retiré).
+- Splash sans son. L'assistant IA testé en 0.11 (branche `agent-ia`) n'est pas repris.
 
 ## Ouvrir et lancer
 

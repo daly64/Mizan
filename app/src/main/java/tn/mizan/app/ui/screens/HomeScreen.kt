@@ -1,5 +1,6 @@
 package tn.mizan.app.ui.screens
 
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
@@ -12,10 +13,10 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.outlined.Menu
-import androidx.compose.material.icons.outlined.Notifications
+import androidx.compose.material.icons.outlined.Settings
 import androidx.compose.material3.Icon
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.Surface
@@ -31,7 +32,6 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import tn.mizan.app.data.Category
 import tn.mizan.app.ui.MonthState
-import tn.mizan.app.ui.components.CategoryTile
 import tn.mizan.app.ui.components.EmptyHint
 import tn.mizan.app.ui.components.MizanCard
 import tn.mizan.app.ui.components.MizanLogo
@@ -42,6 +42,7 @@ import tn.mizan.app.ui.theme.Danger
 import tn.mizan.app.ui.theme.Emerald
 import tn.mizan.app.ui.theme.EmeraldLight
 import tn.mizan.app.ui.theme.Gold
+import tn.mizan.app.ui.theme.Mint
 import tn.mizan.app.ui.theme.Muted
 import tn.mizan.app.ui.theme.OnEmeraldSoft
 import tn.mizan.app.ui.theme.Slate
@@ -50,13 +51,13 @@ import tn.mizan.app.util.Money
 import kotlin.math.roundToInt
 
 @Composable
-fun HomeScreen(state: MonthState, onSeeAll: () -> Unit) {
+fun HomeScreen(state: MonthState, onSeeAll: () -> Unit, onSettings: () -> Unit) {
     LazyColumn(
         Modifier.fillMaxSize(),
         contentPadding = PaddingValues(20.dp),
         verticalArrangement = Arrangement.spacedBy(14.dp)
     ) {
-        item { HomeTopBar() }
+        item { HomeTopBar(onSettings) }
         item { TotalCard(state) }
         item {
             Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
@@ -64,10 +65,12 @@ fun HomeScreen(state: MonthState, onSeeAll: () -> Unit) {
                 MiniCard("Solde disponible", state.balance, Slate, Modifier.weight(1f))
             }
         }
-        item { SectionHeader("Catégories") }
+        item { SectionHeader("Budgets") }
         item {
-            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                Category.entries.forEach { CategoryTile(it, Modifier.weight(1f)) }
+            MizanCard(Modifier.fillMaxWidth()) {
+                Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(14.dp)) {
+                    Category.entries.forEach { c -> BudgetLine(c, state.spentBy(c), state.budgets[c] ?: 0L) }
+                }
             }
         }
         item { SectionHeader("Dernières transactions", "Voir tout", onSeeAll) }
@@ -81,15 +84,54 @@ fun HomeScreen(state: MonthState, onSeeAll: () -> Unit) {
 }
 
 @Composable
-private fun HomeTopBar() {
+private fun HomeTopBar(onSettings: () -> Unit) {
     Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-        Icon(Icons.Outlined.Menu, contentDescription = "Menu", tint = Slate)
-        Spacer(Modifier.weight(1f))
         MizanLogo(28.dp)
         Spacer(Modifier.width(6.dp))
         Text("ميـزان", fontSize = 22.sp, fontWeight = FontWeight.Bold, color = Emerald)
         Spacer(Modifier.weight(1f))
-        Icon(Icons.Outlined.Notifications, contentDescription = "Notifications", tint = Slate)
+        Icon(
+            Icons.Outlined.Settings,
+            contentDescription = "Réglages",
+            tint = Slate,
+            modifier = Modifier
+                .clip(CircleShape)
+                .clickable(onClick = onSettings)
+                .padding(6.dp)
+        )
+    }
+}
+
+/** Une ligne par catégorie : nom, montant dépensé sur le budget, barre de progression. */
+@Composable
+private fun BudgetLine(category: Category, spent: Long, limit: Long) {
+    val ratio = if (limit > 0) spent.toFloat() / limit else 0f
+    val over = limit > 0 && spent > limit
+    Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Text(category.label, fontSize = 14.sp, fontWeight = FontWeight.Medium, color = Slate, modifier = Modifier.weight(1f))
+            Text(
+                "${Money.format(spent)} / ${Money.format(limit)}",
+                fontSize = 12.sp,
+                color = if (over) Danger else Muted
+            )
+        }
+        LinearProgressIndicator(
+            progress = { ratio.coerceIn(0f, 1f) },
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(6.dp)
+                .clip(RoundedCornerShape(3.dp)),
+            color = when {
+                over -> Danger
+                ratio > 0.8f -> Gold
+                else -> Emerald
+            },
+            trackColor = Mint,
+            strokeCap = StrokeCap.Round,
+            gapSize = 0.dp,
+            drawStopIndicator = {}
+        )
     }
 }
 

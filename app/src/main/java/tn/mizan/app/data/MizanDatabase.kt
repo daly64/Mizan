@@ -9,6 +9,7 @@ import androidx.room.OnConflictStrategy
 import androidx.room.Query
 import androidx.room.Room
 import androidx.room.RoomDatabase
+import androidx.room.migration.Migration
 import androidx.sqlite.db.SupportSQLiteDatabase
 import kotlinx.coroutines.flow.Flow
 
@@ -50,7 +51,7 @@ interface MizanDao {
     suspend fun upsertBudgets(budgets: List<Budget>)
 }
 
-@Database(entities = [Expense::class, Budget::class], version = 1, exportSchema = false)
+@Database(entities = [Expense::class, Budget::class], version = 3, exportSchema = false)
 abstract class MizanDatabase : RoomDatabase() {
     abstract fun dao(): MizanDao
 
@@ -63,6 +64,17 @@ abstract class MizanDatabase : RoomDatabase() {
             Category.FACTURES to 800_000L
         )
 
+        // Les versions de test avec assistant IA (0.11.x) avaient passé la base en v2 avec une table « notes ».
+        // On revient à la version simple : v3 = mêmes tables que v1, la table des notes est retirée.
+        private val MIGRATION_1_3 = object : Migration(1, 3) {
+            override fun migrate(db: SupportSQLiteDatabase) {}
+        }
+        private val MIGRATION_2_3 = object : Migration(2, 3) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL("DROP TABLE IF EXISTS `notes`")
+            }
+        }
+
         @Volatile
         private var instance: MizanDatabase? = null
 
@@ -72,7 +84,7 @@ abstract class MizanDatabase : RoomDatabase() {
                     context.applicationContext,
                     MizanDatabase::class.java,
                     "mizan.db"
-                ).addCallback(object : RoomDatabase.Callback() {
+                ).addMigrations(MIGRATION_1_3, MIGRATION_2_3).addCallback(object : RoomDatabase.Callback() {
                     override fun onCreate(db: SupportSQLiteDatabase) {
                         super.onCreate(db)
                         DEFAULT_BUDGETS.forEach { (category, limit) ->

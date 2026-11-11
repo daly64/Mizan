@@ -30,8 +30,6 @@ import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.DatePicker
 import androidx.compose.material3.DatePickerDialog
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.FilterChip
-import androidx.compose.material3.FilterChipDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.OutlinedTextField
@@ -83,7 +81,6 @@ fun AddExpenseScreen(onBack: () -> Unit, onSave: (Expense) -> Unit) {
     var amountText by rememberSaveable { mutableStateOf("") }
     var category by rememberSaveable { mutableStateOf(Category.COURSES) }
     var note by rememberSaveable { mutableStateOf("") }
-    var payment by rememberSaveable { mutableStateOf(PaymentMethod.ESPECES) }
     var date by remember { mutableStateOf(LocalDate.now()) }
     var showPicker by remember { mutableStateOf(false) }
 
@@ -215,22 +212,6 @@ fun AddExpenseScreen(onBack: () -> Unit, onSave: (Expense) -> Unit) {
                 )
             )
 
-            Label("Paiement")
-            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                PaymentMethod.entries.forEach { p ->
-                    FilterChip(
-                        selected = payment == p,
-                        onClick = { payment = p },
-                        label = { Text(p.label) },
-                        shape = RoundedCornerShape(18.dp),
-                        colors = FilterChipDefaults.filterChipColors(
-                            containerColor = CardWhite,
-                            selectedContainerColor = Emerald,
-                            selectedLabelColor = Color.White
-                        )
-                    )
-                }
-            }
         }
 
         Button(
@@ -241,7 +222,7 @@ fun AddExpenseScreen(onBack: () -> Unit, onSave: (Expense) -> Unit) {
                         category = category,
                         note = note.trim(),
                         dateMillis = Dates.toMillis(date),
-                        payment = payment,
+                        payment = PaymentMethod.ESPECES,
                         isIncome = isIncome
                     )
                 )
