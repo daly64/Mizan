@@ -1,5 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- Fichiers partagés avec l'installateur Android : uniquement les APK de mise à jour. -->
+<!-- Fichiers partagés avec l'installateur Android : APK de mise à jour et photo de ticket. -->
 <paths>
     <cache-path name="maj" path="maj/" />
+    <!-- Photo de ticket prise avec l'appareil photo, effacée après lecture. -->
+    <cache-path name="tickets" path="tickets/" />
 </paths>

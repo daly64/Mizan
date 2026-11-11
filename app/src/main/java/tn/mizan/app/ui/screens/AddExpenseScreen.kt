@@ -1,6 +1,31 @@
 package tn.mizan.app.ui.screens
 
+import android.net.Uri
+import android.widget.Toast
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.PickVisualMediaRequest
+import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.expandVertically
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.shrinkVertically
+import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.border
 import androidx.compose.foundation.background
+import androidx.compose.material.icons.outlined.CameraAlt
+import androidx.compose.material.icons.outlined.DocumentScanner
+import androidx.compose.material.icons.outlined.PhotoLibrary
+import androidx.compose.material.icons.outlined.TaskAlt
+import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.OutlinedButton
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.ui.platform.LocalContext
+import androidx.core.content.FileProvider
+import kotlinx.coroutines.launch
+import tn.mizan.app.data.TicketParser
+import tn.mizan.app.data.Tickets
+import java.io.File
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -84,6 +109,60 @@ fun AddExpenseScreen(onBack: () -> Unit, onSave: (Expense) -> Unit) {
     var date by remember { mutableStateOf(LocalDate.now()) }
     var showPicker by remember { mutableStateOf(false) }
 
+    // --- Scan de ticket ---
+    val context = LocalContext.current
+    val scope = rememberCoroutineScope()
+    var scanning by remember { mutableStateOf(false) }
+    var scanMessage by rememberSaveable { mutableStateOf<String?>(null) }
+    var scannedMerchant by rememberSaveable { mutableStateOf<String?>(null) }
+    var amountFromScan by rememberSaveable { mutableStateOf(false) }
+
+    fun readTicket(uri: Uri, temp: File?) = scope.launch {
+        scanning = true
+        val lines = Tickets.readText(context, uri)
+        temp?.delete() // la photo n'est jamais gardée
+        scanning = false
+        if (lines == null) {
+            Toast.makeText(context, "Impossible de lire cette photo", Toast.LENGTH_SHORT).show()
+            return@launch
+        }
+        val result = TicketParser.parse(lines) { Tickets.learnedCategory(context, it) }
+        if (result.isEmpty) {
+            scanMessage = null
+            Toast.makeText(context, "Aucun montant trouvé : reprends la photo plus nette et bien éclairée", Toast.LENGTH_LONG).show()
+            return@launch
+        }
+        isIncome = false
+        result.amountMillimes?.let { amountText = "%d.%03d".format(it / 1000, it % 1000); amountFromScan = true }
+        result.date?.let { date = it }
+        result.category?.let { category = it }
+        result.merchant?.let { if (note.isBlank()) note = it.take(60) }
+        scannedMerchant = result.merchant
+        val missing = buildList {
+            if (result.amountMillimes == null) add("le montant")
+            if (result.date == null) add("la date")
+            if (result.category == null) add("la catégorie")
+        }
+        scanMessage = if (missing.isEmpty()) "Rempli depuis le ticket. Vérifie le montant et la date avant d’enregistrer."
+        else "Rempli depuis le ticket. Non trouvé : ${missing.joinToString(", ")}. Complète avant d’enregistrer."
+    }
+
+    var photoFile by remember { mutableStateOf<File?>(null) }
+    val takePhoto = rememberLauncherForActivityResult(ActivityResultContracts.TakePicture()) { ok ->
+        val file = photoFile
+        if (ok && file != null) readTicket(FileProvider.getUriForFile(context, "${context.packageName}.fichiers", file), file)
+        else file?.delete()
+    }
+    val pickPhoto = rememberLauncherForActivityResult(ActivityResultContracts.PickVisualMedia()) { uri ->
+        if (uri != null) readTicket(uri, null)
+    }
+    fun openCamera() {
+        val dir = File(context.cacheDir, "tickets").apply { mkdirs() }
+        val file = File(dir, "ticket.jpg").also { photoFile = it }
+        runCatching { takePhoto.launch(FileProvider.getUriForFile(context, "${context.packageName}.fichiers", file)) }
+            .onFailure { Toast.makeText(context, "Aucune application appareil photo trouvée", Toast.LENGTH_SHORT).show() }
+    }
+
     val millimes = Money.parse(amountText) ?: 0L
 
     Column(
@@ -144,6 +223,61 @@ fun AddExpenseScreen(onBack: () -> Unit, onSave: (Expense) -> Unit) {
                 }
             }
 
+            // Scanner un ticket : remplit le montant, la date, le magasin et la catégorie
+            AnimatedVisibility(!isIncome, enter = fadeIn() + expandVertically(), exit = fadeOut() + shrinkVertically()) {
+                MizanCard(Modifier.fillMaxWidth()) {
+                    Column(Modifier.padding(14.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Icon(Icons.Outlined.DocumentScanner, contentDescription = null, tint = Emerald, modifier = Modifier.size(22.dp))
+                            Spacer(Modifier.width(10.dp))
+                            Column(Modifier.weight(1f)) {
+                                Text("Scanner un ticket", fontSize = 14.sp, fontWeight = FontWeight.SemiBold, color = Slate)
+                                Text("Lu sur ton téléphone, la photo n’est pas gardée", fontSize = 12.sp, color = Muted)
+                            }
+                            if (scanning) CircularProgressIndicator(color = Emerald, strokeWidth = 2.dp, modifier = Modifier.size(22.dp))
+                        }
+                        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                            Button(
+                                onClick = { openCamera() },
+                                enabled = !scanning,
+                                modifier = Modifier.weight(1f).height(44.dp),
+                                shape = RoundedCornerShape(50),
+                                colors = ButtonDefaults.buttonColors(containerColor = Emerald, contentColor = Color.White)
+                            ) {
+                                Icon(Icons.Outlined.CameraAlt, contentDescription = null, modifier = Modifier.size(18.dp))
+                                Spacer(Modifier.width(6.dp))
+                                Text("Photo", fontSize = 14.sp, fontWeight = FontWeight.SemiBold)
+                            }
+                            OutlinedButton(
+                                onClick = { pickPhoto.launch(PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly)) },
+                                enabled = !scanning,
+                                modifier = Modifier.weight(1f).height(44.dp),
+                                shape = RoundedCornerShape(50),
+                                border = BorderStroke(1.dp, Line)
+                            ) {
+                                Icon(Icons.Outlined.PhotoLibrary, contentDescription = null, tint = Emerald, modifier = Modifier.size(18.dp))
+                                Spacer(Modifier.width(6.dp))
+                                Text("Galerie", fontSize = 14.sp, color = Slate)
+                            }
+                        }
+                        AnimatedVisibility(scanMessage != null) {
+                            Row(
+                                Modifier
+                                    .fillMaxWidth()
+                                    .clip(RoundedCornerShape(12.dp))
+                                    .background(Mint)
+                                    .padding(10.dp),
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Icon(Icons.Outlined.TaskAlt, contentDescription = null, tint = Emerald, modifier = Modifier.size(18.dp))
+                                Spacer(Modifier.width(8.dp))
+                                Text(scanMessage ?: "", fontSize = 12.sp, lineHeight = 17.sp, color = Slate)
+                            }
+                        }
+                    }
+                }
+            }
+
             // Montant
             Column(Modifier.fillMaxWidth(), horizontalAlignment = Alignment.CenterHorizontally) {
                 Text("Montant", fontSize = 13.sp, color = Muted)
@@ -155,7 +289,7 @@ fun AddExpenseScreen(onBack: () -> Unit, onSave: (Expense) -> Unit) {
                         value = amountText,
                         onValueChange = { v ->
                             val cleaned = v.replace(',', '.')
-                            if (amountPattern.matches(cleaned)) amountText = cleaned
+                            if (amountPattern.matches(cleaned)) { amountText = cleaned; amountFromScan = false }
                         },
                         singleLine = true,
                         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
@@ -170,7 +304,8 @@ fun AddExpenseScreen(onBack: () -> Unit, onSave: (Expense) -> Unit) {
                     )
                 }
                 Spacer(Modifier.height(6.dp))
-                Box(Modifier.width(180.dp).height(2.dp).background(Gold))
+                Box(Modifier.width(180.dp).height(if (amountFromScan) 4.dp else 2.dp).background(Gold))
+                if (amountFromScan) Text("Lu sur le ticket : vérifie-le", fontSize = 12.sp, color = Muted, modifier = Modifier.padding(top = 4.dp))
             }
 
             Label("Catégorie")
@@ -216,6 +351,8 @@ fun AddExpenseScreen(onBack: () -> Unit, onSave: (Expense) -> Unit) {
 
         Button(
             onClick = {
+                // Le magasin scanné retient la catégorie choisie, pour les prochains tickets.
+                scannedMerchant?.let { Tickets.learn(context, it, category) }
                 onSave(
                     Expense(
                         amountMillimes = millimes,

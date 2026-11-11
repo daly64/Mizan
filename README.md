@@ -88,3 +88,13 @@ app/src/main/java/tn/mizan/app/
   Le passage à cette signature demande une seule désinstallation de l'ancienne version
   (faire une sauvegarde avant, puis la restaurer).
 - Numéro de version automatique : `0.13.N` (N = numéro de compilation GitHub Actions).
+
+### Scan de ticket (v0.13)
+
+- Nouvelle dépense → **Scanner un ticket** (Photo ou Galerie) : le texte est lu sur le téléphone avec ML Kit
+  (modèle embarqué, hors ligne), puis l'app remplit **le total, la date, le magasin (note) et la catégorie**.
+  Tout reste modifiable, l'utilisateur confirme. La photo est effacée après lecture.
+- Total : lignes « NET A PAYER », « TOTAL TTC », « TOTAL »… (montants à 3 décimales : 64,300 / 1 250,500).
+- Catégorie : règles par magasin (STEG → Factures, Agil → Transport, Carrefour → Courses, Café → Loisirs…).
+  Quand on corrige la catégorie d'un magasin scanné, l'app s'en souvient pour les tickets suivants.
+- Limite : ML Kit ne lit pas l'arabe ; sur un ticket en arabe, seuls les chiffres sont reconnus.
