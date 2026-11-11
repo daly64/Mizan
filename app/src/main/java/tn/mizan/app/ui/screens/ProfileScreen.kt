@@ -7,6 +7,11 @@ import androidx.compose.material.icons.outlined.Backup
 import androidx.compose.material.icons.outlined.DarkMode
 import androidx.compose.material.icons.outlined.Folder
 import androidx.compose.material.icons.outlined.Restore
+import androidx.compose.material.icons.outlined.InstallMobile
+import androidx.compose.material.icons.outlined.SystemUpdate
+import androidx.compose.runtime.rememberCoroutineScope
+import kotlinx.coroutines.launch
+import tn.mizan.app.data.Updates
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.RadioButton
 import androidx.compose.material3.RadioButtonDefaults
@@ -64,7 +69,8 @@ import tn.mizan.app.ui.theme.Slate
 fun ProfileScreen(
     state: MonthState,
     onRestore: (Backup.Content, () -> Unit) -> Unit,
-    onBackupNow: ((Boolean) -> Unit) -> Unit
+    onBackupNow: ((Boolean) -> Unit) -> Unit,
+    onCheckUpdates: () -> Unit
 ) {
     val context = LocalContext.current
     var showTheme by remember { mutableStateOf(false) }
@@ -85,10 +91,24 @@ fun ProfileScreen(
                 .onFailure { toast("Impossible d’utiliser ce dossier") }
         }
     }
+    val scope = rememberCoroutineScope()
+    val pickApk = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
+        if (uri != null) scope.launch {
+            val file = Updates.copyLocalApk(context, uri)
+            when {
+                file == null -> toast("Impossible de lire ce fichier")
+                !Updates.canInstall(context) -> {
+                    toast("Autorise AL MIZAN à installer des applications, puis recommence")
+                    Updates.openInstallPermission(context)
+                }
+                else -> Updates.install(context, file)
+            }
+        }
+    }
     val pickBackup = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
         if (uri != null) {
             val content = Backup.read(context, uri)
-            if (content == null) toast("Ce fichier n’est pas une sauvegarde Mizan") else toRestore = content
+            if (content == null) toast("Ce fichier n’est pas une sauvegarde AL MIZAN") else toRestore = content
         }
     }
 
@@ -120,13 +140,22 @@ fun ProfileScreen(
                 pickBackup.launch(arrayOf("application/json", "application/octet-stream", "text/plain"))
             }) { }
         }
+        Group {
+            SettingRow(Icons.Outlined.SystemUpdate, "Rechercher une mise à jour", onClick = onCheckUpdates) {
+                Value("v${Updates.currentVersionName}")
+            }
+            Divider()
+            SettingRow(Icons.Outlined.InstallMobile, "Installer un APK du téléphone", onClick = {
+                pickApk.launch(arrayOf("application/vnd.android.package-archive", "application/octet-stream"))
+            }) { }
+        }
         Text(
-            "Mizan se sauvegarde tout seul chaque fois que tu quittes l’app. " +
+            "AL MIZAN se sauvegarde tout seul chaque fois que tu quittes l’app. " +
                 "Choisis un dossier du téléphone (ex. Documents) pour garder tes sauvegardes même après une désinstallation.",
             fontSize = 12.sp,
             color = Muted
         )
-        Text("Mizan v0.12", fontSize = 12.sp, color = Muted)
+        Text("AL MIZAN v${Updates.currentVersionName}", fontSize = 12.sp, color = Muted)
     }
 
     if (showTheme) {

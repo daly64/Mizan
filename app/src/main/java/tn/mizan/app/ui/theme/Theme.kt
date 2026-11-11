@@ -20,11 +20,11 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.sp
 
 /** Couleurs de marque fixes, identiques en clair et en sombre (splash, logo). */
-val BrandEmerald = Color(0xFF0F6B5C)
+val BrandEmerald = Color(0xFF0F5C4D)
 val BrandGold = Color(0xFFC9A45C)
-val BrandCream = Color(0xFFF7F1E5)
+val BrandCream = Color(0xFFFAF7EF)
 
-/** Palette Mizan, déclinée en thème clair et en thème sombre. */
+/** Palette AL MIZAN (planche UI/UX), déclinée en thème clair et en thème sombre. */
 @Immutable
 data class MizanPalette(
     val emerald: Color,
@@ -41,16 +41,16 @@ data class MizanPalette(
 )
 
 val LightPalette = MizanPalette(
-    emerald = Color(0xFF0F6B5C),
-    emeraldLight = Color(0xFF2E8467),
+    emerald = Color(0xFF0F5C4D),
+    emeraldLight = Color(0xFF2B7A66),
     gold = Color(0xFFC9A45C),
-    cream = Color(0xFFF7F1E5),
+    cream = Color(0xFFF3EFE3),
     slate = Color(0xFF24302F),
-    muted = Color(0xFF5E6B65),
-    mint = Color(0xFFE3EFE9),
-    line = Color(0xFFE2D9C5),
-    cardWhite = Color(0xFFFFFCF6),
-    danger = Color(0xFFB33A2E),
+    muted = Color(0xFF5D6966),
+    mint = Color(0xFFE2ECE5),
+    line = Color(0xFFE2DBCB),
+    cardWhite = Color(0xFFFAF7EF),
+    danger = Color(0xFFA8402C),
     onEmeraldSoft = Color(0xFFCFE3DA)
 )
 
@@ -58,12 +58,12 @@ val DarkPalette = MizanPalette(
     emerald = Color(0xFF1E8C76),
     emeraldLight = Color(0xFF166B5B),
     gold = Color(0xFFD4B06A),
-    cream = Color(0xFF111816),
+    cream = Color(0xFF111917),
     slate = Color(0xFFECE6D8),
     muted = Color(0xFF9AA8A2),
     mint = Color(0xFF1F3530),
     line = Color(0xFF2B3633),
-    cardWhite = Color(0xFF1A2321),
+    cardWhite = Color(0xFF1A2421),
     danger = Color(0xFFE8705F),
     onEmeraldSoft = Color(0xFFD7EBE3)
 )

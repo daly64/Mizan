@@ -6,6 +6,10 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.displayCutout
+import androidx.compose.foundation.layout.systemBars
+import androidx.compose.foundation.layout.union
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
@@ -22,7 +26,16 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import android.widget.Toast
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.ui.platform.LocalContext
+import kotlinx.coroutines.launch
+import tn.mizan.app.data.Updates
+import tn.mizan.app.ui.screens.Onboarding
+import tn.mizan.app.ui.screens.OnboardingScreen
+import tn.mizan.app.ui.screens.UpdateSheet
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -64,13 +77,45 @@ object Routes {
 
 @Composable
 fun MizanApp(vm: MizanViewModel = viewModel()) {
+    val context = LocalContext.current
+    val scope = rememberCoroutineScope()
     var showSplash by rememberSaveable { mutableStateOf(true) }
+    var showWelcome by rememberSaveable { mutableStateOf(!Onboarding.seen(context)) }
+    var openSettings by rememberSaveable { mutableStateOf(false) }
+    var update by remember { mutableStateOf<Updates.Release?>(null) }
+
+    /** Cherche une nouvelle version ; [manual] = demandé depuis les réglages (on affiche le résultat). */
+    fun checkUpdates(manual: Boolean) = scope.launch {
+        when (val result = Updates.check(context)) {
+            is Updates.Check.Available ->
+                if (manual || !Updates.isSkipped(context, result.release)) update = result.release
+            Updates.Check.UpToDate ->
+                if (manual) Toast.makeText(context, "AL MIZAN est à jour (${Updates.currentVersionName})", Toast.LENGTH_SHORT).show()
+            is Updates.Check.Failed ->
+                if (manual) Toast.makeText(context, result.reason, Toast.LENGTH_LONG).show()
+        }
+    }
+
     if (showSplash) {
         AnimatedSplash(onFinished = { showSplash = false })
         return
     }
+    if (showWelcome) {
+        OnboardingScreen(
+            onFinished = { Onboarding.markSeen(context); showWelcome = false },
+            onRestore = { Onboarding.markSeen(context); openSettings = true; showWelcome = false }
+        )
+        return
+    }
+
+    // Vérification automatique des mises à jour (au plus toutes les 12 h, en silence si rien de neuf).
+    LaunchedEffect(Unit) { if (Updates.shouldAutoCheck(context)) checkUpdates(manual = false) }
+    update?.let { release -> UpdateSheet(release, onDismiss = { update = null }) }
 
     val nav = rememberNavController()
+    LaunchedEffect(openSettings) {
+        if (openSettings) { nav.navigate(Routes.PROFILE) { launchSingleTop = true }; openSettings = false }
+    }
     val state by vm.state.collectAsStateWithLifecycle()
     val backStack by nav.currentBackStackEntryAsState()
     val route = backStack?.destination?.route
@@ -78,6 +123,8 @@ fun MizanApp(vm: MizanViewModel = viewModel()) {
 
     Scaffold(
         containerColor = Cream,
+        // En plein écran, on garde quand même le contenu à l'écart de l'encoche de la caméra.
+        contentWindowInsets = WindowInsets.systemBars.union(WindowInsets.displayCutout),
         bottomBar = {
             if (showBar) {
                 MizanBottomBar(
@@ -115,7 +162,12 @@ fun MizanApp(vm: MizanViewModel = viewModel()) {
                 )
             }
             composable(Routes.PROFILE) {
-                ProfileScreen(state, onRestore = vm::restore, onBackupNow = vm::backupNow)
+                ProfileScreen(
+                    state,
+                    onRestore = vm::restore,
+                    onBackupNow = vm::backupNow,
+                    onCheckUpdates = { checkUpdates(manual = true) }
+                )
             }
         }
     }

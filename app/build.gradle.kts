@@ -13,12 +13,36 @@ android {
         applicationId = "tn.mizan.app"
         minSdk = 26
         targetSdk = 35
-        versionCode = 18
-        versionName = "0.12.0"
+        // Numéro de compilation GitHub Actions : chaque APK publié a un code plus grand que le précédent.
+        // Le tag publié « v0.13.N » correspond au code 100 + N (voir data/Updates.kt).
+        val run = System.getenv("GITHUB_RUN_NUMBER")?.toIntOrNull() ?: 0
+        versionCode = 100 + run
+        versionName = "0.13.$run"
+    }
+
+    // Signature fixe : sans elle, chaque compilation aurait une clé différente et Android refuserait
+    // d'installer la mise à jour par-dessus l'app existante. La clé n'est pas dans le dépôt :
+    // la compilation GitHub la reçoit par les secrets MIZAN_KEYSTORE_B64 et MIZAN_KEYSTORE_PASSWORD.
+    val keystore = file("signing/al-mizan.jks")
+    val keystorePassword = System.getenv("MIZAN_KEYSTORE_PASSWORD")
+    val fixedSigning = keystore.exists() && !keystorePassword.isNullOrEmpty()
+    signingConfigs {
+        if (fixedSigning) {
+            create("almizan") {
+                storeFile = keystore
+                storePassword = keystorePassword
+                keyAlias = "almizan"
+                keyPassword = keystorePassword
+            }
+        }
     }
 
     buildTypes {
+        debug {
+            if (fixedSigning) signingConfig = signingConfigs.getByName("almizan")
+        }
         release {
+            if (fixedSigning) signingConfig = signingConfigs.getByName("almizan")
             isMinifyEnabled = false
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
@@ -36,6 +60,7 @@ android {
     }
     buildFeatures {
         compose = true
+        buildConfig = true
     }
 }
 

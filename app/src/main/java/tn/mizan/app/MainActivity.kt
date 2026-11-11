@@ -8,6 +8,9 @@ import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.compose.runtime.LaunchedEffect
 import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
+import androidx.core.view.WindowCompat
+import androidx.core.view.WindowInsetsCompat
+import androidx.core.view.WindowInsetsControllerCompat
 import tn.mizan.app.ui.MizanApp
 import tn.mizan.app.ui.theme.MizanTheme
 import tn.mizan.app.ui.theme.isMizanDark
@@ -24,11 +27,30 @@ class MainActivity : ComponentActivity() {
                 val style = if (dark) SystemBarStyle.dark(Color.TRANSPARENT)
                 else SystemBarStyle.light(Color.TRANSPARENT, Color.TRANSPARENT)
                 enableEdgeToEdge(statusBarStyle = style, navigationBarStyle = style)
+                pleinEcran()
             }
             MizanTheme {
                 MizanApp()
             }
         }
+        pleinEcran()
+    }
+
+    /**
+     * Plein écran automatique : barre d'état et barre de navigation cachées.
+     * Un glissement depuis le bord de l'écran les fait réapparaître un instant, puis elles se recachent.
+     */
+    private fun pleinEcran() {
+        WindowCompat.getInsetsController(window, window.decorView).apply {
+            systemBarsBehavior = WindowInsetsControllerCompat.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE
+            hide(WindowInsetsCompat.Type.systemBars())
+        }
+    }
+
+    override fun onWindowFocusChanged(hasFocus: Boolean) {
+        super.onWindowFocusChanged(hasFocus)
+        // Au retour dans l'app (après une notification, le sélecteur de fichiers…), on recache les barres.
+        if (hasFocus) pleinEcran()
     }
 
     override fun onStop() {

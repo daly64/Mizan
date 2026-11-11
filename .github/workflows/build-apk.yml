@@ -2,7 +2,7 @@ name: Construire l'APK
 
 on:
   push:
-    branches: [ main ]
+    branches: [ main, 'al-mizan-*' ]
   workflow_dispatch:
 
 permissions:
@@ -21,31 +21,46 @@ jobs:
 
       - uses: gradle/actions/setup-gradle@v4
 
+      - name: Préparer la clé de signature (secret)
+        env:
+          MIZAN_KEYSTORE_B64: ${{ secrets.MIZAN_KEYSTORE_B64 }}
+        run: |
+          if [ -n "$MIZAN_KEYSTORE_B64" ]; then
+            mkdir -p app/signing
+            echo "$MIZAN_KEYSTORE_B64" | base64 -d > app/signing/al-mizan.jks
+          else
+            echo "::warning::Secret MIZAN_KEYSTORE_B64 absent : APK signé avec une clé de test temporaire"
+          fi
+
       - name: Compiler l'APK de test
+        env:
+          MIZAN_KEYSTORE_PASSWORD: ${{ secrets.MIZAN_KEYSTORE_PASSWORD }}
         run: |
           chmod +x gradlew
           ./gradlew assembleDebug
-          cp app/build/outputs/apk/debug/app-debug.apk mizan-debug.apk
+          cp app/build/outputs/apk/debug/app-debug.apk al-mizan.apk
 
       - uses: actions/upload-artifact@v4
         with:
-          name: mizan-debug-apk
-          path: mizan-debug.apk
+          name: al-mizan-apk
+          path: al-mizan.apk
 
       - name: Publier une version de test
         uses: softprops/action-gh-release@v2
         with:
-          tag_name: v0.12.${{ github.run_number }}
-          name: Mizan v0.12 (test ${{ github.run_number }})
+          tag_name: v0.13.${{ github.run_number }}
+          name: AL MIZAN v0.13.${{ github.run_number }}
           prerelease: true
-          files: mizan-debug.apk
+          files: al-mizan.apk
+          body: ${{ github.event.head_commit.message }}
 
       - name: Garder le dernier APK sur la branche apk
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git checkout --orphan apk
+          rm -rf app/signing
           git rm -rf --cached . -q
-          git add -f mizan-debug.apk
+          git add -f al-mizan.apk
           git commit -q -m "APK de test ${GITHUB_SHA::7}"
           git push -f origin apk

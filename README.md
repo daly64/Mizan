@@ -1,4 +1,4 @@
-# Mizan — ميـزان
+# AL MIZAN — الميزان
 
 Application Android de suivi de dépenses personnelles, 100 % locale (aucun accès internet).
 Kotlin · Jetpack Compose · Room · minSdk 26 (Android 8).
@@ -70,3 +70,21 @@ app/src/main/java/tn/mizan/app/
 - Polices Poppins / Inter / Cairo
 - Modifier les budgets, export CSV, sauvegarde
 - Historique des mois précédents
+
+### AL MIZAN, plein écran et mises à jour (v0.13)
+
+- **Nouveau nom** : AL MIZAN / الميزان, couleurs de la planche UI/UX (vert #0F5C4D, or #C9A45C, crème #F3EFE3).
+- **Bienvenue** au premier lancement : 3 pages illustrées qui glissent, avec entrées animées
+  (montée + fondu, courbe douce), illustration qui flotte, points de pagination animés, « Passer ».
+- **Plein écran automatique** : barres d'état et de navigation cachées ; un glissement depuis le bord
+  les affiche un instant.
+- **Mises à jour** : au démarrage (au plus toutes les 12 h) et dans Réglages → « Rechercher une mise à jour »,
+  l'app lit les versions publiées sur GitHub Releases, télécharge l'APK et ouvre l'installateur Android.
+  Réglages → « Installer un APK du téléphone » pour un APK reçu autrement.
+  C'est le seul usage d'internet de l'app (permission INTERNET), aucune donnée n'est envoyée.
+  Le dépôt des versions doit être lisible publiquement pour que la vérification fonctionne (sinon l'app l'indique).
+- **Signature fixe** : la clé n'est pas dans le dépôt, la compilation la reçoit par les secrets GitHub
+  `MIZAN_KEYSTORE_B64` et `MIZAN_KEYSTORE_PASSWORD`. Ainsi les APK successifs s'installent par-dessus l'app.
+  Le passage à cette signature demande une seule désinstallation de l'ancienne version
+  (faire une sauvegarde avant, puis la restaurer).
+- Numéro de version automatique : `0.13.N` (N = numéro de compilation GitHub Actions).

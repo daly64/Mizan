@@ -55,7 +55,7 @@ import tn.mizan.app.ui.theme.Slate
 import tn.mizan.app.util.Dates
 import tn.mizan.app.util.Money
 
-/** Symbole du dinar Mizan : « د » traversé de deux traits. */
+/** Symbole du dinar AL MIZAN : « د » traversé de deux traits. */
 @Composable
 fun DinarSymbol(color: Color, size: Dp, modifier: Modifier = Modifier) {
     Canvas(modifier.size(size)) {
@@ -102,7 +102,7 @@ fun MoneyText(
     }
 }
 
-/** Logo Mizan : balance dans un cercle. */
+/** Logo AL MIZAN : balance dans un cercle. */
 @Composable
 fun MizanLogo(
     size: Dp,

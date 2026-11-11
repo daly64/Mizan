@@ -43,8 +43,8 @@ import tn.mizan.app.ui.theme.BrandGold as Gold
 /**
  * Splash animé, comme dans le prototype Figma :
  * 1. la balance apparaît, grandit et se redresse avec un rebond, le halo s'élargit ;
- * 2. elle remonte, puis ميزان s'écrit en calligraphie Ruqaa, de droite à gauche ;
- *    « Mizan » et le slogan apparaissent ensuite en fondu ;
+ * 2. elle remonte, puis الميزان s'écrit en calligraphie Ruqaa, de droite à gauche ;
+ *    « AL MIZAN » et le slogan apparaissent ensuite en fondu ;
  * 3. après une courte pause, on passe à l'accueil.
  */
 @Composable
@@ -64,7 +64,7 @@ fun AnimatedSplash(onFinished: () -> Unit) {
         logoScale.animateTo(1f, spring(Spring.DampingRatioMediumBouncy, Spring.StiffnessLow))
         launch { lift.animateTo(1f, tween(500, easing = FastOutSlowInEasing)) }
         delay(150)
-        // ميزان s'écrit de droite à gauche, comme à la plume
+        // الميزان s'écrit de droite à gauche, comme à la plume
         writing.animateTo(1f, tween(1_400, easing = LinearEasing))
         textAlpha.animateTo(1f, tween(450))
         delay(900)
@@ -110,10 +110,11 @@ fun AnimatedSplash(onFinished: () -> Unit) {
             Spacer(Modifier.height(4.dp))
             CalligraphyName(progress = writing.value)
             Text(
-                "Mizan",
+                "AL MIZAN",
                 color = Gold,
-                fontSize = 24.sp,
+                fontSize = 20.sp,
                 fontWeight = FontWeight.SemiBold,
+                letterSpacing = 6.sp,
                 modifier = Modifier.graphicsLayer {
                     alpha = textAlpha.value
                     translationY = (1f - textAlpha.value) * textShiftPx
@@ -143,9 +144,9 @@ private val Ruqaa = FontFamily(Font(R.font.aref_ruqaa_bold, FontWeight.Bold))
 @Composable
 private fun CalligraphyName(progress: Float) {
     Text(
-        "ميزان",
+        "الميزان",
         color = Cream,
-        fontSize = 72.sp,
+        fontSize = 64.sp,
         fontFamily = Ruqaa,
         fontWeight = FontWeight.Bold,
         modifier = Modifier
