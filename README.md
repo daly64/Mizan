@@ -106,3 +106,12 @@ app/src/main/java/tn/mizan/app/
 - APK publié en **release** (non débogable), signé avec une clé fixe (secrets GitHub), `targetSdk` 35.
 - Aucune permission sensible : seulement INTERNET (liste des versions). Pas de `REQUEST_INSTALL_PACKAGES`,
   pas d'accès aux SMS, contacts, fichiers ou appareil photo (la photo de ticket passe par l'appareil photo du téléphone).
+
+### Bilan par jour et par mois (v0.13)
+
+- Nouvel onglet **Bilan** (barre du bas : Accueil · Bilan · + · Transactions · Réglages).
+- **Par jour** (‹ › pour changer de jour) : dépensé, revenus, solde, comparaison avec la moyenne du mois,
+  graphique des 7 derniers jours, répartition par catégorie, transactions du jour.
+- **Par mois** (‹ › pour changer de mois) : dépensé, revenus, solde, évolution par rapport au mois précédent,
+  moyenne par jour, jour le plus cher, budget utilisé, graphique jour par jour, répartition par catégorie,
+  3 plus grosses dépenses.

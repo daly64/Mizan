@@ -20,7 +20,9 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.outlined.List
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.outlined.BarChart
 import androidx.compose.material.icons.outlined.Home
+import androidx.compose.material.icons.outlined.Settings
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Scaffold
@@ -59,6 +61,7 @@ import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import tn.mizan.app.ui.screens.AddExpenseScreen
 import tn.mizan.app.ui.screens.AnimatedSplash
+import tn.mizan.app.ui.screens.BilanScreen
 import tn.mizan.app.ui.screens.HomeScreen
 import tn.mizan.app.ui.screens.ProfileScreen
 import tn.mizan.app.ui.screens.TransactionsScreen
@@ -73,6 +76,7 @@ object Routes {
     const val TRANSACTIONS = "transactions"
     const val ADD = "add"
     const val PROFILE = "profile"
+    const val BILAN = "bilan"
 }
 
 @Composable
@@ -161,6 +165,10 @@ fun MizanApp(vm: MizanViewModel = viewModel()) {
                     }
                 )
             }
+            composable(Routes.BILAN) {
+                val all by vm.all.collectAsStateWithLifecycle()
+                BilanScreen(all, state.budgets)
+            }
             composable(Routes.PROFILE) {
                 ProfileScreen(
                     state,
@@ -182,9 +190,12 @@ private fun MizanBottomBar(
     onSelect: (String) -> Unit,
     onAdd: () -> Unit
 ) {
-    // Trois éléments seulement : Accueil, +, Transactions. Les réglages sont sur l'accueil (⚙).
-    val left = listOf(Tab(Routes.HOME, "Accueil", Icons.Outlined.Home))
-    val right = listOf(Tab(Routes.TRANSACTIONS, "Transactions", Icons.AutoMirrored.Outlined.List))
+    // Accueil, Bilan, +, Transactions, Réglages.
+    val left = listOf(Tab(Routes.HOME, "Accueil", Icons.Outlined.Home), Tab(Routes.BILAN, "Bilan", Icons.Outlined.BarChart))
+    val right = listOf(
+        Tab(Routes.TRANSACTIONS, "Transactions", Icons.AutoMirrored.Outlined.List),
+        Tab(Routes.PROFILE, "Réglages", Icons.Outlined.Settings)
+    )
     Surface(color = CardWhite) {
         Column {
             HorizontalDivider(color = Line)

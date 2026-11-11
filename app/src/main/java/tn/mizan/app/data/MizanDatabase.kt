@@ -30,6 +30,10 @@ interface MizanDao {
     @Query("SELECT * FROM budgets")
     fun budgets(): Flow<List<Budget>>
 
+    /** Toutes les transactions, pour le bilan par jour et par mois. */
+    @Query("SELECT * FROM expenses ORDER BY dateMillis DESC, id DESC")
+    fun allExpensesFlow(): Flow<List<Expense>>
+
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun upsertBudget(budget: Budget)
 

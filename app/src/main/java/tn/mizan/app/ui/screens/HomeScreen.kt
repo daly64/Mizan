@@ -88,7 +88,7 @@ private fun HomeTopBar(onSettings: () -> Unit) {
     Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
         MizanLogo(28.dp)
         Spacer(Modifier.width(6.dp))
-        Text("ميـزان", fontSize = 22.sp, fontWeight = FontWeight.Bold, color = Emerald)
+        Text("الميزان", fontSize = 22.sp, fontWeight = FontWeight.Bold, color = Emerald)
         Spacer(Modifier.weight(1f))
         Icon(
             Icons.Outlined.Settings,

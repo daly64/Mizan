@@ -40,6 +40,10 @@ class MizanViewModel(app: Application) : AndroidViewModel(app) {
             MonthState(expenses, budgets.associate { it.category to it.limitMillimes })
         }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), MonthState())
 
+    /** Toutes les transactions (écran Bilan). */
+    val all: StateFlow<List<Expense>> =
+        dao.allExpensesFlow().stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
+
     fun add(expense: Expense, onAdded: (Long) -> Unit = {}) {
         viewModelScope.launch { onAdded(dao.insert(expense)) }
     }
