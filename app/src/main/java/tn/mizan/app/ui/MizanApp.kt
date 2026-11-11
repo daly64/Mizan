@@ -41,12 +41,15 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.lifecycle.viewmodel.compose.LocalViewModelStoreOwner
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
+import tn.mizan.app.agent.AgentViewModel
 import tn.mizan.app.ui.screens.AddExpenseScreen
+import tn.mizan.app.ui.screens.AssistantScreen
 import tn.mizan.app.ui.screens.AnimatedSplash
 import tn.mizan.app.ui.screens.BudgetsScreen
 import tn.mizan.app.ui.screens.HomeScreen
@@ -64,6 +67,7 @@ object Routes {
     const val ADD = "add"
     const val BUDGETS = "budgets"
     const val PROFILE = "profile"
+    const val ASSISTANT = "assistant"
 }
 
 @Composable
@@ -74,11 +78,13 @@ fun MizanApp(vm: MizanViewModel = viewModel()) {
         return
     }
 
+    // L'assistant est créé à la première visite puis garde son modèle chargé tant que l'app vit.
+    val activityOwner = checkNotNull(LocalViewModelStoreOwner.current)
     val nav = rememberNavController()
     val state by vm.state.collectAsStateWithLifecycle()
     val backStack by nav.currentBackStackEntryAsState()
     val route = backStack?.destination?.route
-    val showBar = route != Routes.ADD
+    val showBar = route != Routes.ADD && route != Routes.ASSISTANT
 
     Scaffold(
         containerColor = Cream,
@@ -100,7 +106,11 @@ fun MizanApp(vm: MizanViewModel = viewModel()) {
     ) { padding ->
         NavHost(nav, startDestination = Routes.HOME, modifier = Modifier.padding(padding)) {
             composable(Routes.HOME) {
-                HomeScreen(state, onSeeAll = { nav.navigate(Routes.TRANSACTIONS) })
+                HomeScreen(
+                    state,
+                    onSeeAll = { nav.navigate(Routes.TRANSACTIONS) },
+                    onAssistant = { nav.navigate(Routes.ASSISTANT) }
+                )
             }
             composable(Routes.TRANSACTIONS) {
                 TransactionsScreen(state, onDelete = vm::delete)
@@ -115,6 +125,10 @@ fun MizanApp(vm: MizanViewModel = viewModel()) {
                 )
             }
             composable(Routes.BUDGETS) { BudgetsScreen(state) }
+            composable(Routes.ASSISTANT) {
+                val agent: AgentViewModel = viewModel(viewModelStoreOwner = activityOwner)
+                AssistantScreen(agent, onBack = { nav.popBackStack() })
+            }
             composable(Routes.PROFILE) {
                 ProfileScreen(state, onRestore = vm::restore, onBackupNow = vm::backupNow)
             }

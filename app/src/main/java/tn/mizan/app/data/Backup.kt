@@ -17,6 +17,7 @@ import java.time.LocalDate
  * - le dossier de l'app (Android/data/tn.mizan.app/files/Sauvegardes) ;
  * - et, si on l'a choisi dans Profil, un dossier du téléphone (ex. Documents/Mizan),
  *   qui reste même si l'app est désinstallée.
+ * Les notes de l'assistant sont incluses (v0.11).
  * On garde « mizan-derniere.json » plus une copie par jour (les 7 derniers jours).
  */
 object Backup {
@@ -28,7 +29,13 @@ object Backup {
     private const val DAILY_PREFIX = "mizan-20"
     private const val KEEP_DAYS = 7
 
-    data class Content(val savedAt: Long, val expenses: List<Expense>, val budgets: List<Budget>)
+    data class Content(
+        val savedAt: Long,
+        val expenses: List<Expense>,
+        val budgets: List<Budget>,
+        /** null pour les sauvegardes d'avant la v0.11 (sans notes). */
+        val notes: List<Note>? = null
+    )
 
     // --- Réglages ---
 
@@ -51,7 +58,7 @@ object Backup {
 
     // --- Format ---
 
-    fun toJson(expenses: List<Expense>, budgets: List<Budget>, savedAt: Long): String = JSONObject()
+    fun toJson(expenses: List<Expense>, budgets: List<Budget>, notes: List<Note>, savedAt: Long): String = JSONObject()
         .put("app", "Mizan")
         .put("version", 1)
         .put("savedAt", savedAt)
@@ -71,6 +78,9 @@ object Backup {
         })
         .put("budgets", JSONArray().apply {
             budgets.forEach { b -> put(JSONObject().put("category", b.category.name).put("limitMillimes", b.limitMillimes)) }
+        })
+        .put("notes", JSONArray().apply {
+            notes.forEach { n -> put(JSONObject().put("id", n.id).put("text", n.text).put("dateMillis", n.dateMillis)) }
         })
         .toString(2)
 
@@ -96,7 +106,13 @@ object Backup {
             val o = bu.getJSONObject(i)
             runCatching { Budget(Category.valueOf(o.getString("category")), o.getLong("limitMillimes")) }.getOrNull()
         }
-        Content(root.optLong("savedAt", 0L), expenses, budgets)
+        val notes = root.optJSONArray("notes")?.let { no ->
+            (0 until no.length()).mapNotNull { i ->
+                val o = no.getJSONObject(i)
+                runCatching { Note(o.optLong("id", 0L), o.getString("text"), o.getLong("dateMillis")) }.getOrNull()
+            }
+        }
+        Content(root.optLong("savedAt", 0L), expenses, budgets, notes)
     }.getOrNull()
 
     // --- Écriture ---
@@ -109,9 +125,10 @@ object Backup {
     suspend fun saveNow(context: Context, db: MizanDatabase): Boolean = withContext(Dispatchers.IO) {
         val dao = db.dao()
         val expenses = dao.allExpenses()
-        if (expenses.isEmpty()) return@withContext false
+        val notes = dao.allNotes()
+        if (expenses.isEmpty() && notes.isEmpty()) return@withContext false
         val now = System.currentTimeMillis()
-        val json = toJson(expenses, dao.allBudgets(), now)
+        val json = toJson(expenses, dao.allBudgets(), notes, now)
         val daily = "mizan-${LocalDate.now()}.json"
 
         var ok = runCatching {

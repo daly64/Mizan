@@ -43,3 +43,11 @@ data class Budget(
     @PrimaryKey val category: Category,
     val limitMillimes: Long
 )
+
+/** Note libre prise par l'assistant (ou plus tard à la main). */
+@Entity(tableName = "notes")
+data class Note(
+    @PrimaryKey(autoGenerate = true) val id: Long = 0,
+    val text: String,
+    val dateMillis: Long
+)

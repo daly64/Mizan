@@ -31,6 +31,19 @@ Kotlin · Jetpack Compose · Room · minSdk 26 (Android 8).
   Jamais écrasée par une base vide. **Restaurer une sauvegarde** remplace les données
   par celles d'un fichier choisi. Tout reste local (`data/Backup.kt`).
 
+### Assistant IA local (v0.11, branche `agent-ia`)
+
+- Icône ✨ en haut de l'accueil. Gemma 4 E2B (Google, Apache 2.0) tourne **sur le téléphone**
+  avec LiteRT-LM : Mizan n'a toujours pas la permission internet.
+- Premier lancement : télécharger `gemma-4-E2B-it.litertlm` (~2,6 Go) avec le navigateur,
+  puis l'importer dans l'assistant (copié dans le dossier privé de l'app).
+- Outils (`agent/MizanTools.kt`) : ajouter une dépense, un revenu, une note, chercher dans les notes,
+  calculer (calculatrice exacte en Kotlin), bilan du mois (totaux, budgets, comparaison,
+  projection). Le modèle ne calcule jamais lui-même : il appelle les outils et rédige.
+- Notes stockées dans Room (base v2, migration automatique) et incluses dans la sauvegarde.
+- Menu ⋮ : nouvelle discussion, accélération GPU (essai, retour au processeur si elle échoue),
+  supprimer le modèle.
+
 ## Ouvrir et lancer
 
 1. Ouvrir le dossier `Mizan` dans **Android Studio** (Ladybug ou plus récent).

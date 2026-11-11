@@ -59,6 +59,10 @@ class MizanViewModel(app: Application) : AndroidViewModel(app) {
                 dao.deleteAllExpenses()
                 dao.insertAll(content.expenses)
                 if (content.budgets.isNotEmpty()) dao.upsertBudgets(content.budgets)
+                content.notes?.let { notes ->
+                    dao.deleteAllNotes()
+                    dao.insertNotes(notes)
+                }
             }
             onDone()
         }

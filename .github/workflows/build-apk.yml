@@ -2,7 +2,7 @@ name: Construire l'APK
 
 on:
   push:
-    branches: [ main ]
+    branches: [ main, agent-ia ]
   workflow_dispatch:
 
 permissions:
@@ -33,6 +33,7 @@ jobs:
           path: mizan-debug.apk
 
       - name: Publier une version de test
+        if: github.ref == 'refs/heads/main'
         uses: softprops/action-gh-release@v2
         with:
           tag_name: v0.10.${{ github.run_number }}
@@ -40,7 +41,18 @@ jobs:
           prerelease: true
           files: mizan-debug.apk
 
+      - name: Publier une version de test de l'assistant
+        if: github.ref == 'refs/heads/agent-ia'
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: agent-ia-${{ github.run_number }}
+          name: Mizan + assistant IA (test ${{ github.run_number }})
+          target_commitish: ${{ github.sha }}
+          prerelease: true
+          files: mizan-debug.apk
+
       - name: Garder le dernier APK sur la branche apk
+        if: github.ref == 'refs/heads/main'
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"

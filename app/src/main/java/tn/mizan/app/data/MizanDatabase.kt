@@ -9,6 +9,7 @@ import androidx.room.OnConflictStrategy
 import androidx.room.Query
 import androidx.room.Room
 import androidx.room.RoomDatabase
+import androidx.room.migration.Migration
 import androidx.sqlite.db.SupportSQLiteDatabase
 import kotlinx.coroutines.flow.Flow
 
@@ -48,9 +49,29 @@ interface MizanDao {
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun upsertBudgets(budgets: List<Budget>)
+
+    // --- Assistant : lectures ponctuelles et notes ---
+
+    @Query("SELECT * FROM expenses WHERE dateMillis BETWEEN :start AND :end ORDER BY dateMillis DESC, id DESC")
+    suspend fun expensesBetweenNow(start: Long, end: Long): List<Expense>
+
+    @Insert
+    suspend fun insertNote(note: Note): Long
+
+    @Query("SELECT * FROM notes WHERE text LIKE '%' || :query || '%' ORDER BY dateMillis DESC LIMIT :limit")
+    suspend fun searchNotes(query: String, limit: Int): List<Note>
+
+    @Query("SELECT * FROM notes ORDER BY dateMillis, id")
+    suspend fun allNotes(): List<Note>
+
+    @Query("DELETE FROM notes")
+    suspend fun deleteAllNotes()
+
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun insertNotes(notes: List<Note>)
 }
 
-@Database(entities = [Expense::class, Budget::class], version = 1, exportSchema = false)
+@Database(entities = [Expense::class, Budget::class, Note::class], version = 2, exportSchema = false)
 abstract class MizanDatabase : RoomDatabase() {
     abstract fun dao(): MizanDao
 
@@ -63,6 +84,16 @@ abstract class MizanDatabase : RoomDatabase() {
             Category.FACTURES to 800_000L
         )
 
+        /** v2 : table des notes de l'assistant (les dépenses et budgets ne bougent pas). */
+        private val MIGRATION_1_2 = object : Migration(1, 2) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL(
+                    "CREATE TABLE IF NOT EXISTS `notes` (`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, " +
+                        "`text` TEXT NOT NULL, `dateMillis` INTEGER NOT NULL)"
+                )
+            }
+        }
+
         @Volatile
         private var instance: MizanDatabase? = null
 
@@ -72,7 +103,7 @@ abstract class MizanDatabase : RoomDatabase() {
                     context.applicationContext,
                     MizanDatabase::class.java,
                     "mizan.db"
-                ).addCallback(object : RoomDatabase.Callback() {
+                ).addMigrations(MIGRATION_1_2).addCallback(object : RoomDatabase.Callback() {
                     override fun onCreate(db: SupportSQLiteDatabase) {
                         super.onCreate(db)
                         DEFAULT_BUDGETS.forEach { (category, limit) ->

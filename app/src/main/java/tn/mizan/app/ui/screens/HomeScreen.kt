@@ -1,5 +1,6 @@
 package tn.mizan.app.ui.screens
 
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
@@ -12,10 +13,11 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.Menu
-import androidx.compose.material.icons.outlined.Notifications
+import androidx.compose.material.icons.outlined.AutoAwesome
 import androidx.compose.material3.Icon
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.Surface
@@ -50,13 +52,13 @@ import tn.mizan.app.util.Money
 import kotlin.math.roundToInt
 
 @Composable
-fun HomeScreen(state: MonthState, onSeeAll: () -> Unit) {
+fun HomeScreen(state: MonthState, onSeeAll: () -> Unit, onAssistant: () -> Unit) {
     LazyColumn(
         Modifier.fillMaxSize(),
         contentPadding = PaddingValues(20.dp),
         verticalArrangement = Arrangement.spacedBy(14.dp)
     ) {
-        item { HomeTopBar() }
+        item { HomeTopBar(onAssistant) }
         item { TotalCard(state) }
         item {
             Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
@@ -81,7 +83,7 @@ fun HomeScreen(state: MonthState, onSeeAll: () -> Unit) {
 }
 
 @Composable
-private fun HomeTopBar() {
+private fun HomeTopBar(onAssistant: () -> Unit) {
     Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
         Icon(Icons.Outlined.Menu, contentDescription = "Menu", tint = Slate)
         Spacer(Modifier.weight(1f))
@@ -89,7 +91,16 @@ private fun HomeTopBar() {
         Spacer(Modifier.width(6.dp))
         Text("ميـزان", fontSize = 22.sp, fontWeight = FontWeight.Bold, color = Emerald)
         Spacer(Modifier.weight(1f))
-        Icon(Icons.Outlined.Notifications, contentDescription = "Notifications", tint = Slate)
+        // Assistant IA local (remplace l'icône de notifications, qui ne faisait rien)
+        Icon(
+            Icons.Outlined.AutoAwesome,
+            contentDescription = "Assistant",
+            tint = Emerald,
+            modifier = Modifier
+                .clip(CircleShape)
+                .clickable(onClick = onAssistant)
+                .padding(6.dp)
+        )
     }
 }
 
