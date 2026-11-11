@@ -50,9 +50,9 @@ data class AssistantState(
 )
 
 /**
- * L'assistant de Mizan : Gemma 4 E2B tourne sur le téléphone avec LiteRT-LM.
+ * L'assistant de Mizan : un petit modèle (Qwen3 0.6B ou Gemma 4 E2B) tourne sur le téléphone avec LiteRT-LM.
  * Rien ne sort du téléphone (Mizan n'a pas la permission internet).
- * Le moteur reste chargé tant que l'app est ouverte, pour ne pas recharger 2,6 Go à chaque visite.
+ * Le moteur reste chargé tant que l'app est ouverte, pour ne pas recharger le modèle à chaque visite.
  */
 class AgentViewModel(app: Application) : AndroidViewModel(app) {
 
@@ -92,7 +92,7 @@ class AgentViewModel(app: Application) : AndroidViewModel(app) {
             _state.update { it.copy(model = ModelState.Importing(0f)) }
             runCatching {
                 closeEngine()
-                ModelStore.import(context, uri) { p -> _state.update { it.copy(model = ModelState.Importing(p)) } }
+                ModelStore.import(context, uri, name) { p -> _state.update { it.copy(model = ModelState.Importing(p)) } }
             }.onSuccess { loadEngine() }
                 .onFailure { e -> _state.update { it.copy(model = ModelState.Failed("Import impossible : ${e.message}")) } }
         }
@@ -144,7 +144,7 @@ class AgentViewModel(app: Application) : AndroidViewModel(app) {
             EngineConfig(
                 modelPath = ModelStore.modelFile(context).absolutePath,
                 backend = if (gpu) Backend.GPU() else Backend.CPU(threadCount = 4),
-                maxNumTokens = 4096,
+                maxNumTokens = if (ModelStore.isGemma4(context)) 4096 else null,
                 cacheDir = cache.absolutePath
             )
         )
@@ -176,7 +176,7 @@ class AgentViewModel(app: Application) : AndroidViewModel(app) {
             - Ne calcule jamais de tête : utilise l'outil calculer pour toute opération.
             - Pour un bilan ou des conseils pour économiser, appelle d'abord bilanDuMois et appuie-toi uniquement sur ses chiffres. Donne ensuite 2 ou 3 actions concrètes.
             - N'invente jamais de montant.
-        """.trimIndent()
+        """.trimIndent() + if (ModelStore.isQwen(context)) "\n/no_think" else ""
     }
 
     // --- Conversation ---
@@ -196,8 +196,10 @@ class AgentViewModel(app: Application) : AndroidViewModel(app) {
                         val piece = textOf(chunk)
                         if (piece.isEmpty()) return@collect
                         reply.append(piece)
+                        val visible = withoutThinking(reply.toString())
+                        if (visible.isEmpty()) return@collect // il réfléchit encore : on garde « L'assistant réfléchit… »
                         val id = replyId ?: addItem(Who.AGENT, "").also { replyId = it }
-                        updateItem(id, reply.toString())
+                        updateItem(id, visible)
                     }
                 }
             }.onFailure { e ->
@@ -226,6 +228,13 @@ class AgentViewModel(app: Application) : AndroidViewModel(app) {
             }
             _state.update { it.copy(messages = emptyList()) }
         }
+    }
+
+    /** Retire les passages <think>…</think> (réflexion interne de Qwen3), même s'ils ne sont pas finis. */
+    private fun withoutThinking(text: String): String {
+        val closed = text.replace(Regex("<think>.*?</think>", RegexOption.DOT_MATCHES_ALL), "")
+        val open = closed.indexOf("<think>")
+        return (if (open >= 0) closed.substring(0, open) else closed).trim()
     }
 
     private fun textOf(message: Message): String =

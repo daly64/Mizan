@@ -8,9 +8,6 @@ Kotlin · Jetpack Compose · Room · minSdk 26 (Android 8).
 - **Splash** : splash système (logo sur fond émeraude), puis splash animé :
   la balance apparaît avec un rebond, puis ميزان s'écrit en calligraphie Ruqaa
   (police Aref Ruqaa embarquée, licence OFL dans `licenses/`), puis Mizan et le slogan.
-  Son embarqué (`res/raw/splash_calame.ogg`, généré par `tools/generer_son_calame.py`) :
-  le bruit d'un calame qui écrit ميزان, synchronisé avec le nom ; muet en silencieux/vibreur,
-  désactivable dans Profil → « Son au démarrage ».
 - **Accueil** : dépenses du mois et jauge du budget, revenus, solde,
   catégories, dernières transactions.
 - **Transactions** : recherche, filtres par catégorie, liste groupée par jour.
@@ -33,16 +30,18 @@ Kotlin · Jetpack Compose · Room · minSdk 26 (Android 8).
 
 ### Assistant IA local (v0.11, branche `agent-ia`)
 
-- Icône ✨ en haut de l'accueil. Gemma 4 E2B (Google, Apache 2.0) tourne **sur le téléphone**
-  avec LiteRT-LM : Mizan n'a toujours pas la permission internet.
-- Premier lancement : télécharger `gemma-4-E2B-it.litertlm` (~2,6 Go) avec le navigateur,
-  puis l'importer dans l'assistant (copié dans le dossier privé de l'app).
+- Icône ✨ en haut de l'accueil. Le modèle tourne **sur le téléphone** avec LiteRT-LM :
+  Mizan n'a toujours pas la permission internet.
+- Deux modèles au choix (Apache 2.0, sans compte) : **léger** Qwen3 0.6B (`Qwen3-0.6B.litertlm`, ~0,6 Go)
+  ou **complet** Gemma 4 E2B (`gemma-4-E2B-it.litertlm`, ~2,6 Go). On le télécharge avec le navigateur,
+  puis on l'importe dans l'assistant (copié dans le dossier privé de l'app).
 - Outils (`agent/MizanTools.kt`) : ajouter une dépense, un revenu, une note, chercher dans les notes,
   calculer (calculatrice exacte en Kotlin), bilan du mois (totaux, budgets, comparaison,
   projection). Le modèle ne calcule jamais lui-même : il appelle les outils et rédige.
 - Notes stockées dans Room (base v2, migration automatique) et incluses dans la sauvegarde.
 - Menu ⋮ : nouvelle discussion, accélération GPU (essai, retour au processeur si elle échoue),
-  supprimer le modèle.
+  changer / supprimer le modèle.
+- Le son du splash a été retiré (v0.11.1).
 
 ## Ouvrir et lancer
 

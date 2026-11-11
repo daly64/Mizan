@@ -69,6 +69,7 @@ import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import tn.mizan.app.agent.AgentViewModel
 import tn.mizan.app.agent.ChatItem
+import tn.mizan.app.agent.ModelOption
 import tn.mizan.app.agent.ModelState
 import tn.mizan.app.agent.ModelStore
 import tn.mizan.app.agent.Who
@@ -138,7 +139,7 @@ fun AssistantScreen(vm: AgentViewModel, onBack: () -> Unit) {
                             onClick = { menuOpen = false; vm.setGpu(!state.gpu) }
                         )
                         DropdownMenuItem(
-                            text = { Text("Supprimer le modèle", color = Danger) },
+                            text = { Text("Changer / supprimer le modèle", color = Danger) },
                             onClick = { menuOpen = false; confirmDelete = true }
                         )
                     }
@@ -164,7 +165,7 @@ fun AssistantScreen(vm: AgentViewModel, onBack: () -> Unit) {
         AlertDialog(
             onDismissRequest = { confirmDelete = false },
             title = { Text("Supprimer le modèle ?") },
-            text = { Text("Cela libère ${ModelStore.sizeLabel(LocalContext.current)}. Vos dépenses et notes restent. Il faudra réimporter le fichier pour utiliser l'assistant.") },
+            text = { Text("Cela libère ${ModelStore.sizeLabel(LocalContext.current)}. Vos dépenses et notes restent. Vous pourrez ensuite importer un autre modèle (léger ou complet).") },
             confirmButton = {
                 TextButton(onClick = { confirmDelete = false; vm.deleteModel() }) { Text("Supprimer", color = Danger) }
             },
@@ -193,22 +194,37 @@ private fun SetupPanel(vm: AgentViewModel, error: String?) {
             color = Slate,
             fontSize = 14.sp
         )
-        StepCard(
-            "1",
-            "Télécharger le modèle",
-            "Gemma 4 E2B de Google (licence Apache 2.0), environ 2,6 Go. Le téléchargement se fait dans votre navigateur, de préférence en wifi."
-        ) {
-            OutlinedButton(onClick = {
-                try {
-                    context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(ModelStore.DOWNLOAD_URL)))
-                } catch (_: ActivityNotFoundException) {
+        Text("1. Choisissez un modèle et téléchargez-le", fontWeight = FontWeight.SemiBold, color = Slate, fontSize = 15.sp)
+        ModelOption.entries.forEach { option ->
+            MizanCard(Modifier.fillMaxWidth()) {
+                Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Text(option.title, fontWeight = FontWeight.SemiBold, color = Slate, fontSize = 15.sp, modifier = Modifier.weight(1f))
+                        Text(
+                            option.size,
+                            color = Emerald,
+                            fontSize = 12.sp,
+                            fontWeight = FontWeight.SemiBold,
+                            modifier = Modifier
+                                .clip(RoundedCornerShape(10.dp))
+                                .background(Mint)
+                                .padding(horizontal = 8.dp, vertical = 3.dp)
+                        )
+                    }
+                    Text(option.description, color = Muted, fontSize = 13.sp)
+                    OutlinedButton(onClick = {
+                        try {
+                            context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(option.url)))
+                        } catch (_: ActivityNotFoundException) {
+                        }
+                    }) { Text("Télécharger (${option.size})", color = Emerald) }
                 }
-            }) { Text("Ouvrir le lien de téléchargement", color = Emerald) }
+            }
         }
         StepCard(
             "2",
             "Importer le fichier",
-            "Choisissez « gemma-4-E2B-it.litertlm » dans Téléchargements. Mizan en garde une copie : vous pourrez ensuite supprimer le fichier téléchargé."
+            "Une fois le téléchargement fini, choisissez le fichier .litertlm dans Téléchargements. Mizan en garde une copie : vous pourrez ensuite supprimer le fichier téléchargé."
         ) {
             Button(
                 onClick = { picker.launch(arrayOf("*/*")) },
