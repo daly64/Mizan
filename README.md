@@ -1,5 +1,7 @@
 # AL MIZAN — الميزان
 
+Dépôt : `daly64/al-mizan`
+
 Application Android de suivi de dépenses personnelles, 100 % locale (aucun accès internet).
 Kotlin · Jetpack Compose · Room · minSdk 26 (Android 8).
 

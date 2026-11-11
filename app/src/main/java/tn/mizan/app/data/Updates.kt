@@ -20,7 +20,7 @@ import java.net.URL
  */
 object Updates {
     /** Dépôt où la compilation publie les APK. Il doit être public pour que l'app puisse le lire. */
-    private const val RELEASES_URL = "https://api.github.com/repos/daly64/mizan/releases?per_page=10"
+    private const val RELEASES_URL = "https://api.github.com/repos/daly64/al-mizan/releases?per_page=10"
 
     private const val PREFS = "mizan_reglages"
     private const val KEY_LAST_CHECK = "maj_derniere_verif"
