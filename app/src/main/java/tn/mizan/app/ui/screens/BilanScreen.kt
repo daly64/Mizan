@@ -30,6 +30,19 @@ import androidx.compose.material.icons.automirrored.outlined.KeyboardArrowLeft
 import androidx.compose.material.icons.automirrored.outlined.KeyboardArrowRight
 import androidx.compose.material.icons.outlined.AutoAwesome
 import androidx.compose.foundation.layout.size
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.core.MutableTransitionState
+import androidx.compose.animation.slideInVertically
+import androidx.compose.animation.expandVertically
+import androidx.compose.foundation.horizontalScroll
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.text.KeyboardActions
+import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.material.icons.automirrored.outlined.Send
+import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.OutlinedTextFieldDefaults
+import androidx.compose.runtime.mutableStateListOf
+import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.Text
@@ -54,6 +67,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import tn.mizan.app.data.Category
 import tn.mizan.app.data.Conseils
+import tn.mizan.app.data.Questions
 import tn.mizan.app.data.Expense
 import tn.mizan.app.ui.components.EmptyHint
 import tn.mizan.app.ui.components.IconCircle
@@ -203,6 +217,7 @@ private fun MonthReport(month: YearMonth, byDay: Map<LocalDate, List<Expense>>, 
 
         val bilan = remember(month, all, budgets) { Conseils.pour(month, all, budgets) }
         ConseilsCard(bilan)
+        AskCard(month, all, budgets)
 
         Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
             Stat("Moyenne par jour", Money.format(if (elapsed > 0) spent / elapsed else 0), Modifier.weight(1f))
@@ -268,13 +283,20 @@ private fun ConseilsCard(bilan: Conseils.Bilan) {
                 Text("Mini IA", fontSize = 11.sp, color = Muted)
             }
             Text(bilan.resume, fontSize = 13.sp, lineHeight = 18.sp, color = Slate)
-            bilan.conseils.forEach { conseil ->
+            bilan.conseils.forEachIndexed { index, conseil ->
+                // Les conseils apparaissent un par un, en glissant doucement.
+                val visible = remember(bilan) { MutableTransitionState(false).apply { targetState = true } }
                 val color = when (conseil.kind) {
                     Conseils.Kind.ALERTE -> Danger
                     Conseils.Kind.ATTENTION -> Gold
                     Conseils.Kind.BRAVO -> Emerald
                     Conseils.Kind.INFO -> Muted
                 }
+                AnimatedVisibility(
+                    visibleState = visible,
+                    enter = fadeIn(tween(350, delayMillis = 150 * index)) +
+                        slideInVertically(tween(350, delayMillis = 150 * index)) { it / 2 }
+                ) {
                 Row(
                     Modifier
                         .fillMaxWidth()
@@ -292,7 +314,100 @@ private fun ConseilsCard(bilan: Conseils.Bilan) {
                     Spacer(Modifier.width(10.dp))
                     Text(conseil.text, fontSize = 12.sp, lineHeight = 17.sp, color = Slate)
                 }
+                }
             }
+        }
+    }
+}
+
+/** « Demande à la mini IA » : questions en un clic ou écrites, réponses calculées sur le mois affiché. */
+@Composable
+private fun AskCard(month: YearMonth, all: List<Expense>, budgets: Map<Category, Long>) {
+    val conversation = remember(month) { mutableStateListOf<Pair<String, String>>() }
+    var text by remember(month) { mutableStateOf("") }
+    fun ask(question: String) {
+        if (question.isBlank()) return
+        conversation += question.trim() to Questions.repondre(question, month, all, budgets)
+        if (conversation.size > 4) conversation.removeAt(0)
+        text = ""
+    }
+    MizanCard(Modifier.fillMaxWidth()) {
+        Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Icon(Icons.Outlined.AutoAwesome, contentDescription = null, tint = Gold, modifier = Modifier.size(20.dp))
+                Spacer(Modifier.width(8.dp))
+                Text("Demande à la mini IA", fontSize = 14.sp, fontWeight = FontWeight.SemiBold, color = Slate)
+            }
+            // Questions en un clic
+            Row(
+                Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()),
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                Questions.suggestions.forEach { s ->
+                    Text(
+                        s,
+                        fontSize = 12.sp,
+                        color = Emerald,
+                        fontWeight = FontWeight.Medium,
+                        modifier = Modifier
+                            .clip(RoundedCornerShape(50))
+                            .background(Mint)
+                            .clickable { ask(s) }
+                            .padding(horizontal = 12.dp, vertical = 8.dp)
+                    )
+                }
+            }
+            // La conversation : question à droite, réponse à gauche, qui apparaît en douceur
+            conversation.forEach { (question, answer) ->
+                val visible = remember(question, answer) { MutableTransitionState(false).apply { targetState = true } }
+                AnimatedVisibility(visibleState = visible, enter = fadeIn(tween(300)) + expandVertically(tween(300))) {
+                    Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                        Row(Modifier.fillMaxWidth()) {
+                            Spacer(Modifier.weight(1f))
+                            Text(
+                                question,
+                                fontSize = 12.sp,
+                                color = Color.White,
+                                modifier = Modifier
+                                    .clip(RoundedCornerShape(14.dp, 14.dp, 4.dp, 14.dp))
+                                    .background(Emerald)
+                                    .padding(horizontal = 12.dp, vertical = 8.dp)
+                            )
+                        }
+                        Text(
+                            answer,
+                            fontSize = 12.sp,
+                            lineHeight = 17.sp,
+                            color = Slate,
+                            modifier = Modifier
+                                .clip(RoundedCornerShape(14.dp, 14.dp, 14.dp, 4.dp))
+                                .background(Mint)
+                                .padding(horizontal = 12.dp, vertical = 8.dp)
+                        )
+                    }
+                }
+            }
+            OutlinedTextField(
+                value = text,
+                onValueChange = { text = it.take(80) },
+                modifier = Modifier.fillMaxWidth(),
+                singleLine = true,
+                placeholder = { Text("Ex. : combien pour le taxi ?", color = Muted, fontSize = 13.sp) },
+                keyboardOptions = KeyboardOptions(imeAction = ImeAction.Send),
+                keyboardActions = KeyboardActions(onSend = { ask(text) }),
+                trailingIcon = {
+                    IconButton(onClick = { ask(text) }, enabled = text.isNotBlank()) {
+                        Icon(Icons.AutoMirrored.Outlined.Send, contentDescription = "Envoyer", tint = if (text.isNotBlank()) Emerald else Line)
+                    }
+                },
+                shape = RoundedCornerShape(14.dp),
+                colors = OutlinedTextFieldDefaults.colors(
+                    focusedContainerColor = CardWhite,
+                    unfocusedContainerColor = CardWhite,
+                    unfocusedBorderColor = Line,
+                    focusedBorderColor = Emerald
+                )
+            )
         }
     }
 }

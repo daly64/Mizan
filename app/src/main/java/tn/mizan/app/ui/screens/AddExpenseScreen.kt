@@ -283,7 +283,20 @@ fun AddExpenseScreen(ia: MiniIA.Model, onBack: () -> Unit, onSave: (Expense) -> 
                                 focusedBorderColor = Emerald
                             )
                         )
-                        AnimatedVisibility(quickMessage != null) {
+                        // Aperçu en direct : ce que la mini IA comprend pendant que tu écris
+                        val preview = remember(quickText, ia) { if (quickText.isBlank()) null else MiniIA.quick(quickText, ia) }
+                        AnimatedVisibility(preview != null, enter = fadeIn() + expandVertically(), exit = fadeOut() + shrinkVertically()) {
+                            val p = preview
+                            if (p != null) Row(
+                                Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.spacedBy(6.dp)
+                            ) {
+                                PreviewChip(p.amountMillimes?.let { Money.format(it) + " DT" } ?: "montant ?", p.amountMillimes != null)
+                                PreviewChip(p.note.ifBlank { "note ?" }, p.note.isNotBlank())
+                                PreviewChip(p.guess?.let { "${it.category.label} ${MiniIA.confidenceLabel(it)}" } ?: "catégorie ?", p.guess != null)
+                            }
+                        }
+                        AnimatedVisibility(quickMessage != null && quickText.isBlank()) {
                             Row(
                                 Modifier
                                     .fillMaxWidth()
@@ -505,4 +518,21 @@ fun AddExpenseScreen(ia: MiniIA.Model, onBack: () -> Unit, onSave: (Expense) -> 
 @Composable
 private fun Label(text: String) {
     Text(text, fontSize = 13.sp, fontWeight = FontWeight.SemiBold, color = Slate)
+}
+
+/** Une étiquette de l'aperçu de saisie rapide : verte si la mini IA a compris, grise sinon. */
+@Composable
+private fun PreviewChip(text: String, ok: Boolean) {
+    Text(
+        text,
+        fontSize = 12.sp,
+        maxLines = 1,
+        color = if (ok) Emerald else Muted,
+        fontWeight = if (ok) FontWeight.SemiBold else FontWeight.Normal,
+        modifier = Modifier
+            .clip(RoundedCornerShape(50))
+            .background(if (ok) Mint else Color.Transparent)
+            .border(1.dp, if (ok) Mint else Line, RoundedCornerShape(50))
+            .padding(horizontal = 10.dp, vertical = 5.dp)
+    )
 }

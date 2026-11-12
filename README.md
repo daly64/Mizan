@@ -132,3 +132,12 @@ dans `data/MiniIA.kt` et `data/Conseils.kt`. Elle répond instantanément, même
   projection de fin de mois et dépense maximale par jour pour tenir le budget, catégories qui dépassent
   ou vont dépasser, comparaison avec tes 3 mois précédents, dépenses inhabituelles, jour de la semaine
   le plus dépensier, part des revenus mise de côté, jours sans dépense.
+
+#### Plus d'interactivité
+
+- **Demande à la mini IA** (Bilan → Par mois) : questions en un clic (« Combien je peux dépenser par jour ? »,
+  « Comparé au mois dernier ? », « Ma plus grosse dépense ? »…) ou écrites librement (« combien pour le taxi ? » :
+  elle cherche le mot dans tes notes). Les réponses s'affichent comme une petite conversation, calculées sur le mois affiché.
+- **Aperçu en direct** de la saisie rapide : pendant que tu écris, des étiquettes montrent le montant, la note
+  et la catégorie compris par la mini IA (vertes si compris, grises sinon).
+- Les **conseils** du bilan apparaissent un par un, en glissant.
