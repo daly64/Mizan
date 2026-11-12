@@ -157,7 +157,9 @@ fun MizanApp(vm: MizanViewModel = viewModel()) {
                 TransactionsScreen(state, onDelete = vm::delete)
             }
             composable(Routes.ADD) {
+                val ia by vm.ia.collectAsStateWithLifecycle()
                 AddExpenseScreen(
+                    ia = ia,
                     onBack = { nav.popBackStack() },
                     onSave = { expense ->
                         vm.add(expense)

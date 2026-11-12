@@ -115,3 +115,20 @@ app/src/main/java/tn/mizan/app/
 - **Par mois** (‹ › pour changer de mois) : dépensé, revenus, solde, évolution par rapport au mois précédent,
   moyenne par jour, jour le plus cher, budget utilisé, graphique jour par jour, répartition par catégorie,
   3 plus grosses dépenses.
+
+### Mini IA (v0.13, branche `al-mizan-ia`)
+
+Une petite IA **codée de zéro** (aucune bibliothèque d'IA, aucun gros modèle, rien ne sort du téléphone),
+dans `data/MiniIA.kt` et `data/Conseils.kt`. Elle répond instantanément, même sur un téléphone d'entrée de gamme.
+
+- **Catégorie automatique** : en écrivant la note (« taxi », « kahwa », « facture steg »…), la mini IA choisit
+  la catégorie et affiche sa confiance. Si tu choisis toi-même une autre catégorie, elle te le propose sans l'imposer.
+  C'est un petit réseau de neurones (régression softmax sur les mots et des morceaux de 3 lettres),
+  entraîné par descente de gradient sur des exemples de départ (français + darija) **et sur tes dépenses** :
+  chaque dépense enregistrée avec une note devient un exemple, et l'IA se réentraîne en quelques millisecondes.
+- **Saisie rapide** (Nouvelle dépense) : « taxi 7.5 », « 20 dinars louage », « pain 600 millimes »
+  → montant, note et catégorie remplis d'un coup. Tout reste modifiable avant d'enregistrer.
+- **Bilan et conseils** (Bilan → Par mois) : résumé du mois et conseils calculés sur tes chiffres :
+  projection de fin de mois et dépense maximale par jour pour tenir le budget, catégories qui dépassent
+  ou vont dépasser, comparaison avec tes 3 mois précédents, dépenses inhabituelles, jour de la semaine
+  le plus dépensier, part des revenus mise de côté, jours sans dépense.

@@ -24,6 +24,11 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.core.content.FileProvider
 import kotlinx.coroutines.launch
 import tn.mizan.app.data.TicketParser
+import tn.mizan.app.data.MiniIA
+import androidx.compose.material.icons.outlined.AutoAwesome
+import androidx.compose.foundation.text.KeyboardActions
+import androidx.compose.ui.text.input.ImeAction
+import androidx.compose.runtime.LaunchedEffect
 import tn.mizan.app.data.Tickets
 import java.io.File
 import androidx.compose.foundation.clickable
@@ -101,13 +106,22 @@ private val amountPattern = Regex("^\\d{0,7}(\\.\\d{0,3})?$")
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun AddExpenseScreen(onBack: () -> Unit, onSave: (Expense) -> Unit) {
+fun AddExpenseScreen(ia: MiniIA.Model, onBack: () -> Unit, onSave: (Expense) -> Unit) {
     var isIncome by rememberSaveable { mutableStateOf(false) }
     var amountText by rememberSaveable { mutableStateOf("") }
     var category by rememberSaveable { mutableStateOf(Category.COURSES) }
     var note by rememberSaveable { mutableStateOf("") }
     var date by remember { mutableStateOf(LocalDate.now()) }
     var showPicker by remember { mutableStateOf(false) }
+
+    // --- Mini IA : devine la catégorie depuis la note, et comprend la saisie rapide ---
+    var categoryTouched by rememberSaveable { mutableStateOf(false) } // l'utilisateur a choisi lui-même
+    var quickText by rememberSaveable { mutableStateOf("") }
+    var quickMessage by rememberSaveable { mutableStateOf<String?>(null) }
+    val guess = remember(note, ia, isIncome) { if (isIncome || note.isBlank()) null else ia.guess(note) }
+    LaunchedEffect(guess) {
+        if (!categoryTouched && guess != null) category = guess.category
+    }
 
     // --- Scan de ticket ---
     val context = LocalContext.current
@@ -135,7 +149,7 @@ fun AddExpenseScreen(onBack: () -> Unit, onSave: (Expense) -> Unit) {
         isIncome = false
         result.amountMillimes?.let { amountText = "%d.%03d".format(it / 1000, it % 1000); amountFromScan = true }
         result.date?.let { date = it }
-        result.category?.let { category = it }
+        result.category?.let { category = it; categoryTouched = true }
         result.merchant?.let { if (note.isBlank()) note = it.take(60) }
         scannedMerchant = result.merchant
         val missing = buildList {
@@ -219,6 +233,70 @@ fun AddExpenseScreen(onBack: () -> Unit, onSave: (Expense) -> Unit) {
                             fontWeight = if (selected) FontWeight.SemiBold else FontWeight.Medium,
                             color = if (selected) Emerald else Muted
                         )
+                    }
+                }
+            }
+
+            // Saisie rapide : « taxi 7.5 » → montant, note et catégorie remplis par la mini IA
+            AnimatedVisibility(!isIncome, enter = fadeIn() + expandVertically(), exit = fadeOut() + shrinkVertically()) {
+                fun applyQuick() {
+                    if (quickText.isBlank()) return
+                    val q = MiniIA.quick(quickText, ia)
+                    q.amountMillimes?.let { amountText = "%d.%03d".format(it / 1000, it % 1000); amountFromScan = false }
+                    if (q.note.isNotBlank()) note = q.note.take(60)
+                    q.guess?.let { category = it.category; categoryTouched = false }
+                    quickMessage = buildList {
+                        add(if (q.amountMillimes != null) "montant ${Money.format(q.amountMillimes)}" else "montant non trouvé")
+                        q.guess?.let { add("${it.category.label} (${MiniIA.confidenceLabel(it)})") }
+                            ?: add("catégorie à choisir")
+                    }.joinToString(" · ")
+                    quickText = ""
+                }
+                MizanCard(Modifier.fillMaxWidth()) {
+                    Column(Modifier.padding(14.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Icon(Icons.Outlined.AutoAwesome, contentDescription = null, tint = Gold, modifier = Modifier.size(22.dp))
+                            Spacer(Modifier.width(10.dp))
+                            Column(Modifier.weight(1f)) {
+                                Text("Saisie rapide", fontSize = 14.sp, fontWeight = FontWeight.SemiBold, color = Slate)
+                                Text("Écris comme tu parles, la mini IA remplit le reste", fontSize = 12.sp, color = Muted)
+                            }
+                        }
+                        OutlinedTextField(
+                            value = quickText,
+                            onValueChange = { quickText = it.take(80) },
+                            modifier = Modifier.fillMaxWidth(),
+                            singleLine = true,
+                            placeholder = { Text("taxi 7.5 · kahwa 2.8 · steg 85,500", color = Muted) },
+                            keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
+                            keyboardActions = KeyboardActions(onDone = { applyQuick() }),
+                            trailingIcon = {
+                                TextButton(onClick = { applyQuick() }, enabled = quickText.isNotBlank()) {
+                                    Text("Remplir", color = if (quickText.isNotBlank()) Emerald else Line, fontWeight = FontWeight.SemiBold)
+                                }
+                            },
+                            shape = RoundedCornerShape(14.dp),
+                            colors = OutlinedTextFieldDefaults.colors(
+                                focusedContainerColor = CardWhite,
+                                unfocusedContainerColor = CardWhite,
+                                unfocusedBorderColor = Line,
+                                focusedBorderColor = Emerald
+                            )
+                        )
+                        AnimatedVisibility(quickMessage != null) {
+                            Row(
+                                Modifier
+                                    .fillMaxWidth()
+                                    .clip(RoundedCornerShape(12.dp))
+                                    .background(Mint)
+                                    .padding(10.dp),
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Icon(Icons.Outlined.TaskAlt, contentDescription = null, tint = Emerald, modifier = Modifier.size(18.dp))
+                                Spacer(Modifier.width(8.dp))
+                                Text("Compris : ${quickMessage ?: ""}. Vérifie avant d’enregistrer.", fontSize = 12.sp, lineHeight = 17.sp, color = Slate)
+                            }
+                        }
                     }
                 }
             }
@@ -311,7 +389,30 @@ fun AddExpenseScreen(onBack: () -> Unit, onSave: (Expense) -> Unit) {
             Label("Catégorie")
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 Category.entries.forEach { c ->
-                    CategoryTile(c, Modifier.weight(1f), selected = c == category, onClick = { category = c })
+                    CategoryTile(c, Modifier.weight(1f), selected = c == category, onClick = { category = c; categoryTouched = true })
+                }
+            }
+            // Ce que pense la mini IA de la note
+            guess?.let { g ->
+                if (!categoryTouched && g.category == category) {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Icon(Icons.Outlined.AutoAwesome, contentDescription = null, tint = Gold, modifier = Modifier.size(14.dp))
+                        Spacer(Modifier.width(6.dp))
+                        Text("Devinée par la mini IA d’après la note · ${MiniIA.confidenceLabel(g)}", fontSize = 12.sp, color = Muted)
+                    }
+                } else if (g.category != category) {
+                    Row(
+                        Modifier
+                            .clip(RoundedCornerShape(50))
+                            .background(Mint)
+                            .clickable { category = g.category; categoryTouched = false }
+                            .padding(horizontal = 12.dp, vertical = 6.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Icon(Icons.Outlined.AutoAwesome, contentDescription = null, tint = Gold, modifier = Modifier.size(14.dp))
+                        Spacer(Modifier.width(6.dp))
+                        Text("La mini IA propose : ${g.category.label} (${MiniIA.confidenceLabel(g)})", fontSize = 12.sp, color = Emerald)
+                    }
                 }
             }
 

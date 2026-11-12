@@ -5,7 +5,10 @@ import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.flowOn
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import androidx.room.withTransaction
@@ -13,6 +16,7 @@ import tn.mizan.app.MizanApplication
 import tn.mizan.app.data.Backup
 import tn.mizan.app.data.Category
 import tn.mizan.app.data.Expense
+import tn.mizan.app.data.MiniIA
 import tn.mizan.app.util.Dates
 
 /** Tout ce que les écrans affichent pour le mois en cours. */
@@ -43,6 +47,11 @@ class MizanViewModel(app: Application) : AndroidViewModel(app) {
     /** Toutes les transactions (écran Bilan). */
     val all: StateFlow<List<Expense>> =
         dao.allExpensesFlow().stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
+
+    /** Mini IA de catégorie, réentraînée sur le téléphone à chaque changement de tes transactions. */
+    val ia: StateFlow<MiniIA.Model> =
+        dao.allExpensesFlow().map { MiniIA.train(it) }.flowOn(Dispatchers.Default)
+            .stateIn(viewModelScope, SharingStarted.Eagerly, MiniIA.starter)
 
     fun add(expense: Expense, onAdded: (Long) -> Unit = {}) {
         viewModelScope.launch { onAdded(dao.insert(expense)) }

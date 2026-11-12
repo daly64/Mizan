@@ -28,6 +28,8 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.outlined.KeyboardArrowLeft
 import androidx.compose.material.icons.automirrored.outlined.KeyboardArrowRight
+import androidx.compose.material.icons.outlined.AutoAwesome
+import androidx.compose.foundation.layout.size
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.Text
@@ -51,6 +53,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import tn.mizan.app.data.Category
+import tn.mizan.app.data.Conseils
 import tn.mizan.app.data.Expense
 import tn.mizan.app.ui.components.EmptyHint
 import tn.mizan.app.ui.components.IconCircle
@@ -119,7 +122,7 @@ fun BilanScreen(all: List<Expense>, budgets: Map<Category, Long>) {
                 transitionSpec = { fadeIn(tween(250)) togetherWith fadeOut(tween(150)) },
                 label = "bilan"
             ) { _ ->
-                if (byMonth) MonthReport(month, byDay, budgets) else DayReport(day, byDay, all)
+                if (byMonth) MonthReport(month, byDay, budgets, all) else DayReport(day, byDay, all)
             }
         }
     }
@@ -177,7 +180,7 @@ private fun DayReport(day: LocalDate, byDay: Map<LocalDate, List<Expense>>, all:
 // ---------------------------------------------------------------- Mois
 
 @Composable
-private fun MonthReport(month: YearMonth, byDay: Map<LocalDate, List<Expense>>, budgets: Map<Category, Long>) {
+private fun MonthReport(month: YearMonth, byDay: Map<LocalDate, List<Expense>>, budgets: Map<Category, Long>, all: List<Expense>) {
     val days = (1..month.lengthOfMonth()).map { month.atDay(it) }
     val list = days.flatMap { byDay[it].orEmpty() }
     val spent = list.spent()
@@ -197,6 +200,9 @@ private fun MonthReport(month: YearMonth, byDay: Map<LocalDate, List<Expense>>, 
                 else "${abs(pct)} % de moins que le mois précédent (${Money.format(prevSpent)})"
             }
         })
+
+        val bilan = remember(month, all, budgets) { Conseils.pour(month, all, budgets) }
+        ConseilsCard(bilan)
 
         Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
             Stat("Moyenne par jour", Money.format(if (elapsed > 0) spent / elapsed else 0), Modifier.weight(1f))
@@ -245,6 +251,48 @@ private fun MonthReport(month: YearMonth, byDay: Map<LocalDate, List<Expense>>, 
         if (top.isNotEmpty()) {
             SectionHeader("Plus grosses dépenses")
             Column(verticalArrangement = Arrangement.spacedBy(8.dp)) { top.forEach { TransactionRow(it) } }
+        }
+    }
+}
+
+// ---------------------------------------------------------------- Bilan et conseils de la mini IA
+
+@Composable
+private fun ConseilsCard(bilan: Conseils.Bilan) {
+    MizanCard(Modifier.fillMaxWidth()) {
+        Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Icon(Icons.Outlined.AutoAwesome, contentDescription = null, tint = Gold, modifier = Modifier.size(20.dp))
+                Spacer(Modifier.width(8.dp))
+                Text("Bilan et conseils", fontSize = 14.sp, fontWeight = FontWeight.SemiBold, color = Slate, modifier = Modifier.weight(1f))
+                Text("Mini IA", fontSize = 11.sp, color = Muted)
+            }
+            Text(bilan.resume, fontSize = 13.sp, lineHeight = 18.sp, color = Slate)
+            bilan.conseils.forEach { conseil ->
+                val color = when (conseil.kind) {
+                    Conseils.Kind.ALERTE -> Danger
+                    Conseils.Kind.ATTENTION -> Gold
+                    Conseils.Kind.BRAVO -> Emerald
+                    Conseils.Kind.INFO -> Muted
+                }
+                Row(
+                    Modifier
+                        .fillMaxWidth()
+                        .clip(RoundedCornerShape(12.dp))
+                        .background(Mint)
+                        .padding(10.dp)
+                ) {
+                    Box(
+                        Modifier
+                            .padding(top = 5.dp)
+                            .size(8.dp)
+                            .clip(RoundedCornerShape(50))
+                            .background(color)
+                    )
+                    Spacer(Modifier.width(10.dp))
+                    Text(conseil.text, fontSize = 12.sp, lineHeight = 17.sp, color = Slate)
+                }
+            }
         }
     }
 }
